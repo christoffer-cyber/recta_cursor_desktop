@@ -4,6 +4,8 @@ import ProgressIndicator from "../components/ProgressIndicator";
 import ClusterProgressIndicator from "../components/ClusterProgressIndicator";
 import ClusterTopbar from "../components/ClusterTopbar";
 import DataPreview from "../components/DataPreview";
+import LiveInsightsPanel, { Contradiction } from "../components/LiveInsightsPanel";
+import ChapterProgress from "../components/ChapterProgress";
 import { CompanyIntelligenceAgent, CompanyData } from "../../lib/company-intelligence";
 import { ArenaLogicEngine, CLUSTER_DEFINITIONS } from "../../lib/arena-clusters";
 import { ClusterType, ArenaCluster, Message, ArenaSession } from "../../lib/types";
@@ -29,10 +31,70 @@ export default function Arena() {
   );
   const [overallConfidence, setOverallConfidence] = useState(0);
   
+  // Live insights state
+  const [contradictions, setContradictions] = useState<Contradiction[]>([
+    // Demo insight för att visa funktionaliteten
+    {
+      id: 'demo_1',
+      type: 'assumption',
+      description: 'Företaget antar att rekrytering är den bästa lösningen',
+      confidence: 0.7,
+      evidence: 'Ingen diskussion om alternativa lösningar nämndes',
+      timestamp: new Date(Date.now() - 300000) // 5 minutes ago
+    }
+  ]);
+
+  // Chapter tracking state
+  const [currentChapter, setCurrentChapter] = useState(1);
+  const [completedChapters, setCompletedChapters] = useState<number[]>([]);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Function to simulate AI detecting insights from user responses
+  const detectInsights = (userMessage: string) => {
+    const insights: Contradiction[] = [];
+    
+    // Simple keyword-based detection for demo purposes
+    if (userMessage.toLowerCase().includes('budget') && userMessage.toLowerCase().includes('ungefär')) {
+      insights.push({
+        id: `insight_${Date.now()}_1`,
+        type: 'assumption',
+        description: 'Användaren verkar ha en ungefärlig budget utan konkret analys',
+        confidence: 0.75,
+        evidence: `"${userMessage.slice(0, 100)}..."`,
+        timestamp: new Date()
+      });
+    }
+    
+    if (userMessage.toLowerCase().includes('alla') || userMessage.toLowerCase().includes('alltid')) {
+      insights.push({
+        id: `insight_${Date.now()}_2`,
+        type: 'bias',
+        description: 'Generaliseringar upptäckta - kan indikera kognitiv bias',
+        confidence: 0.65,
+        evidence: `"${userMessage.slice(0, 100)}..."`,
+        timestamp: new Date()
+      });
+    }
+    
+    if (userMessage.toLowerCase().includes('behöver') && !userMessage.toLowerCase().includes('varför')) {
+      insights.push({
+        id: `insight_${Date.now()}_3`,
+        type: 'gap',
+        description: 'Behov uttrycks utan djupare motivering',
+        confidence: 0.8,
+        evidence: `"${userMessage.slice(0, 100)}..."`,
+        timestamp: new Date()
+      });
+    }
+    
+    if (insights.length > 0) {
+      setContradictions(prev => [...prev, ...insights]);
+    }
   };
 
   useEffect(() => {
@@ -76,6 +138,9 @@ export default function Arena() {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+
+    // Detect insights from user message
+    detectInsights(content);
 
     try {
       // Add timeout to prevent hanging requests
@@ -579,11 +644,23 @@ export default function Arena() {
               </div>
             </div>
           )}
+
+          {/* Chapter Progress in Chat Section */}
+          {currentStep !== 'setup' && (
+            <ChapterProgress
+              currentChapter={currentChapter}
+              completedChapters={completedChapters}
+              totalChapters={6}
+            />
+          )}
         </div>
 
-        {/* Right: Progress Canvas (30%) */}
-        <div className="arena-progress-section">
-          <div className="progress-canvas-title">Analysens Framsteg</div>
+        {/* Right: Canvas Section (70%) */}
+        <div className="arena-canvas-section">
+          <div className="canvas-header">
+            <h2>Analyskanvas</h2>
+            <p>Real-time insights och framsteg</p>
+          </div>
           
           {currentStep === 'setup' && (
             <div className="setup-progress">
@@ -626,9 +703,15 @@ export default function Arena() {
                 </div>
               </div>
               
+              {/* Live Insights Panel */}
+              <LiveInsightsPanel 
+                contradictions={contradictions}
+                currentCluster={currentCluster}
+              />
+              
               {/* Future space for additional canvas features */}
               <div className="canvas-future-space">
-                {/* This space is reserved for upcoming features like real-time insights, benchmarks, and recommendations */}
+                {/* This space is reserved for upcoming features like benchmarks, and recommendations */}
               </div>
             </>
           )}
