@@ -1,11 +1,7 @@
-import OpenAI from 'openai';
 import { NextRequest, NextResponse } from 'next/server';
 import type { ExtractedData, ReportData } from '@/lib/types';
 import { SCBDataProvider } from '../../../../lib/scb-integration';
-
-const openai = new OpenAI({
-  apiKey: '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',
-});
+import { getClaudeClient } from '../../../../lib/claude-client';
 
 const REPORT_GENERATION_PROMPT = `Du är en senior strategisk konsult från McKinsey/BCG som ska skapa en djupgående, professionell rekryteringsrapport. Rapporten ska vara på management consulting-nivå med konkreta insights, siffror och actionable recommendations.
 
@@ -165,18 +161,21 @@ FÖRETAGSINTELLIGENS:
       (industryBenchmarks ? `\n\nBRANSCHBENCHMARKS:\n${industryBenchmarks}` : '') +
       (companyIntelligenceContext ? `\n\n${companyIntelligenceContext}` : '');
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: REPORT_GENERATION_PROMPT },
+    const claude = getClaudeClient();
+    const response = await claude.chat(
+      [
         { role: "user", content: `Generera rapport baserat på denna data:\n\n${enhancedDataContext}` }
       ],
-      temperature: 0.3,
-      max_tokens: 4000, // Increased for detailed consulting-level reports
-    });
+      REPORT_GENERATION_PROMPT,
+      {
+        model: "claude-3-5-sonnet-20241022",
+        maxTokens: 4000, // Increased for detailed consulting-level reports
+        temperature: 0.3
+      }
+    );
 
     console.log('Report generation completed');
-    const reportContent = completion.choices[0]?.message?.content || '';
+    const reportContent = response.content || '';
     console.log('Generated content length:', reportContent.length);
     
     // Create report structure based on data type

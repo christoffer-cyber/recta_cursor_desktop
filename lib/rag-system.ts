@@ -1,5 +1,6 @@
 // RAG System for Recta - Knowledge-driven recruitment analysis
-import { OpenAI } from 'openai';
+import { getClaudeClient } from './claude-client';
+import { OpenAI } from 'openai'; // Still needed for embeddings
 
 export interface KnowledgeChunk {
   id: string;
@@ -32,11 +33,15 @@ export interface RAGResponse {
 }
 
 export class RectaRAGSystem {
-  private openai: OpenAI;
+  private claude = getClaudeClient();
+  private openai: OpenAI; // For embeddings only
   private knowledgeBase: KnowledgeChunk[] = [];
 
-  constructor(apiKey: string) {
-    this.openai = new OpenAI({ apiKey });
+  constructor(openaiApiKey?: string) {
+    // Initialize OpenAI client for embeddings (fallback to environment variable)
+    this.openai = new OpenAI({ 
+      apiKey: openaiApiKey || process.env.OPENAI_API_KEY || '' 
+    });
   }
 
   // Add knowledge to the system
@@ -133,10 +138,8 @@ export class RectaRAGSystem {
       
       Svara alltid på svenska och vara konkret och praktisk.`;
 
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: systemPrompt },
+      const response = await this.claude.chat(
+        [
           { 
             role: 'user', 
             content: `Baserat på följande kunskap, besvara frågan: "${ragQuery.question}"
@@ -147,11 +150,15 @@ export class RectaRAGSystem {
             ${context}` 
           }
         ],
-        temperature: 0.7,
-        max_tokens: 1500
-      });
+        systemPrompt,
+        {
+          model: 'claude-3-5-sonnet-20241022',
+          maxTokens: 1500,
+          temperature: 0.7
+        }
+      );
 
-      const answer = response.choices[0].message.content || "Kunde inte generera svar.";
+      const answer = response.content || "Kunde inte generera svar.";
       
       // Calculate confidence based on relevance and amount of sources
       const avgSimilarity = relevantChunks.reduce((sum, chunk) => sum + (chunk.similarity || 0), 0) / relevantChunks.length;

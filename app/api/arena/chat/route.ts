@@ -1,9 +1,9 @@
-import OpenAI from 'openai';
 import { NextRequest, NextResponse } from 'next/server';
 import { getGlobalRagSystem, isRagSystemInitialized } from '../../../../lib/global-rag';
 import { CompanyIntelligenceAgent, detectCompanyName } from '../../../../lib/company-intelligence';
 import { ArenaLogicEngine, CLUSTER_PROMPTS, CLUSTER_DEFINITIONS } from '../../../../lib/arena-clusters';
 import { ClusterType, ArenaCluster } from '../../../../lib/types';
+import { getClaudeClient, ClaudeMessage } from '../../../../lib/claude-client';
 
 const SYSTEM_PROMPT = `Du är en expert på strategisk rekrytering och organisationsutveckling. Din uppgift är att hjälpa företag att förbereda sig optimalt innan de påbörjar en rekryteringsprocess.
 
@@ -178,26 +178,29 @@ export async function POST(request: NextRequest) {
     ` : ''}
     ` : ''}`;
 
-    // Initialize OpenAI client with API key from environment
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 });
+    // Initialize Claude client
+    const claude = getClaudeClient();
+    if (!claude.isConfigured()) {
+      return NextResponse.json({ error: 'Anthropic API key not configured' }, { status: 500 });
     }
 
-    const openai = new OpenAI({ apiKey });
+    // Convert messages to Claude format
+    const claudeMessages: ClaudeMessage[] = messages.map((msg: {role: string, content: string}) => ({
+      role: msg.role === 'system' ? 'assistant' : msg.role as 'user' | 'assistant', // Claude doesn't support system role in messages
+      content: msg.content
+    }));
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Faster and cheaper model for chat
-      messages: [
-        { role: "system", content: enhancedSystemPrompt },
-        ...messages
-      ],
-      temperature: 0.7,
-      max_tokens: 400, // Shorter responses for faster generation
-      stream: false, // Ensure we get complete response quickly
-    });
+    const response = await claude.chat(
+      claudeMessages,
+      enhancedSystemPrompt, // System prompt goes separately in Claude
+      {
+        model: "claude-3-5-sonnet-20241022",
+        maxTokens: 400,
+        temperature: 0.7
+      }
+    );
 
-    const aiResponse = completion.choices[0]?.message?.content || "Jag kunde inte generera ett svar. Försök igen.";
+    const aiResponse = response.content || "Jag kunde inte generera ett svar. Försök igen.";
     
     // Check if analysis is complete using cluster logic
     const analysisComplete = clusters && ArenaLogicEngine.isAnalysisComplete(clusters);

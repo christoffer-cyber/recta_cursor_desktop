@@ -1,9 +1,5 @@
-import OpenAI from 'openai';
 import { NextRequest, NextResponse } from 'next/server';
-
-const openai = new OpenAI({
-  apiKey: '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',
-});
+import { getClaudeClient } from '../../../../lib/claude-client';
 
 const EXTRACTION_PROMPT = `Du är en expert på strategisk rekrytering och organisationsanalys. Extrahera strukturerad data från konversationen och returnera ENDAST giltig JSON.
 
@@ -160,10 +156,9 @@ export async function POST(request: NextRequest) {
       
     console.log('Truncated conversation being sent to AI:', truncatedConversation.substring(0, 200) + '...');
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: EXTRACTION_PROMPT },
+    const claude = getClaudeClient();
+    const response = await claude.chat(
+      [
         { 
           role: "user", 
           content: `Analysera denna rekryteringskonversation mycket noggrant. 
@@ -185,13 +180,16 @@ INSTRUKTIONER:
 Returnera JSON:` 
         }
       ],
-      temperature: 0.05, // Lower temperature for more consistent extraction
-      max_tokens: 1500,
-      response_format: { type: "json_object" }
-    });
+      EXTRACTION_PROMPT,
+      {
+        model: "claude-3-5-sonnet-20241022",
+        maxTokens: 2000,
+        temperature: 0.05 // Lower temperature for more consistent extraction
+      }
+    );
 
-    console.log('OpenAI response received');
-    const rawContent = completion.choices[0]?.message?.content;
+    console.log('Claude response received');
+    const rawContent = response.content;
     console.log('Raw AI content:', rawContent);
 
     if (!rawContent) {

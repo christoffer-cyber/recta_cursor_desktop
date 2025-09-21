@@ -6,15 +6,17 @@ let globalRagSystem: RectaRAGSystem | null = null;
 let isInitialized = false;
 
 export function getGlobalRagSystem(): RectaRAGSystem | null {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    console.error('OpenAI API key not configured');
+  const openaiApiKey = process.env.OPENAI_API_KEY; // Still needed for embeddings
+  const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+  
+  if (!anthropicApiKey) {
+    console.error('Anthropic API key not configured');
     return null;
   }
   
   if (!globalRagSystem) {
-    globalRagSystem = new RectaRAGSystem(apiKey);
-    console.log('🚀 Global RAG system created');
+    globalRagSystem = new RectaRAGSystem(openaiApiKey);
+    console.log('🚀 Global RAG system created (Claude + OpenAI embeddings)');
   }
   
   return globalRagSystem;
