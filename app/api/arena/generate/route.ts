@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { ExtractedData, ReportData } from '@/lib/types';
 import { SCBDataProvider } from '../../../../lib/scb-integration';
 import { getClaudeClient } from '../../../../lib/claude-client';
+import { CLAUDE_MODEL, DEFAULT_MAX_TOKENS } from '../../../../lib/ai-config';
 
 const REPORT_GENERATION_PROMPT = `Du är en senior strategisk konsult från McKinsey/BCG som ska skapa en djupgående, professionell rekryteringsrapport. Rapporten ska vara på management consulting-nivå med konkreta insights, siffror och actionable recommendations.
 
@@ -168,8 +169,8 @@ FÖRETAGSINTELLIGENS:
       ],
       REPORT_GENERATION_PROMPT,
       {
-        model: "claude-3-5-sonnet-20241022",
-        maxTokens: 4000, // Increased for detailed consulting-level reports
+        model: CLAUDE_MODEL,
+        maxTokens: Math.min(DEFAULT_MAX_TOKENS, 4000),
         temperature: 0.3
       }
     );

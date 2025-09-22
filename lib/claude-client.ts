@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { AI_REQUEST_TIMEOUT_MS, CLAUDE_MODEL, DEFAULT_MAX_TOKENS, DEFAULT_TEMPERATURE } from './ai-config';
 
 export interface ClaudeMessage {
   role: 'user' | 'assistant';
@@ -37,16 +38,21 @@ export class ClaudeClient {
     }
   ): Promise<ClaudeResponse> {
     try {
+      const controller = new AbortController();
+      const abortTimer = setTimeout(() => controller.abort(), AI_REQUEST_TIMEOUT_MS);
+
       const response = await this.anthropic.messages.create({
-        model: options?.model || 'claude-3-5-sonnet-20241022',
-        max_tokens: options?.maxTokens || 1000,
-        temperature: options?.temperature || 0.7,
+        model: options?.model || CLAUDE_MODEL,
+        max_tokens: options?.maxTokens ?? DEFAULT_MAX_TOKENS,
+        temperature: options?.temperature ?? DEFAULT_TEMPERATURE,
         system: systemPrompt,
         messages: messages.map(msg => ({
           role: msg.role,
           content: msg.content
         }))
-      });
+      }, { signal: controller.signal });
+
+      clearTimeout(abortTimer);
 
       const content = response.content[0];
       if (content.type !== 'text') {

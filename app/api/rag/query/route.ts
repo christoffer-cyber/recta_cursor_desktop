@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { RAGQuery } from '../../../../lib/rag-system';
 import { getGlobalRagSystem, isRagSystemInitialized } from '../../../../lib/global-rag';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { question, context } = body as RAGQuery;
-    
-    if (!question) {
-      return NextResponse.json({ error: 'Question is required' }, { status: 400 });
-    }
+    const Schema = z.object({
+      question: z.string().min(1),
+      context: z.object({
+        industry: z.string().optional(),
+        role: z.string().optional(),
+        companySize: z.string().optional(),
+        stage: z.string().optional(),
+      }).partial().optional(),
+    });
+    const { question, context } = Schema.parse(body) as RAGQuery;
     
     console.log('RAG query received:', { question, context });
     
@@ -43,6 +49,9 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Invalid request', details: error.flatten() }, { status: 400 });
+    }
     console.error('Error processing RAG query:', error);
     return NextResponse.json({ 
       error: 'Failed to process RAG query',

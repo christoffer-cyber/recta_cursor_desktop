@@ -4,6 +4,8 @@ import { CompanyIntelligenceAgent, detectCompanyName } from '../../../../lib/com
 import { ArenaLogicEngine, CLUSTER_PROMPTS, CLUSTER_DEFINITIONS } from '../../../../lib/arena-clusters';
 import { ClusterType, ArenaCluster } from '../../../../lib/types';
 import { getClaudeClient, ClaudeMessage } from '../../../../lib/claude-client';
+import { z } from 'zod';
+import { CLAUDE_MODEL, DEFAULT_MAX_TOKENS, DEFAULT_TEMPERATURE } from '../../../../lib/ai-config';
 
 const SYSTEM_PROMPT = `Du är en expert på strategisk rekrytering och organisationsutveckling. Din uppgift är att hjälpa företag att förbereda sig optimalt innan de påbörjar en rekryteringsprocess.
 
@@ -37,6 +39,15 @@ Börja med att hälsa och fråga om företaget och den tänkta rollen.`;
 
 export async function POST(request: NextRequest) {
   try {
+    const body = await request.json();
+    const Schema = z.object({
+      messages: z.array(z.object({ role: z.enum(['user','assistant','system']), content: z.string() })).min(1),
+      sessionId: z.string().optional(),
+      extractedData: z.any().optional(),
+      currentCluster: z.string().optional(),
+      clusters: z.record(z.any()).optional(),
+      overallConfidence: z.number().optional(),
+    });
     const { 
       messages, 
       sessionId, 
@@ -44,7 +55,7 @@ export async function POST(request: NextRequest) {
       currentCluster,
       clusters,
       overallConfidence 
-    } = await request.json();
+    } = Schema.parse(body);
 
     // Get latest user message for RAG enhancement
     const latestUserMessage = messages[messages.length - 1];
@@ -194,9 +205,9 @@ export async function POST(request: NextRequest) {
       claudeMessages,
       enhancedSystemPrompt, // System prompt goes separately in Claude
       {
-        model: "claude-3-5-sonnet-20241022",
-        maxTokens: 400,
-        temperature: 0.7
+        model: CLAUDE_MODEL,
+        maxTokens: Math.min(DEFAULT_MAX_TOKENS, 400),
+        temperature: DEFAULT_TEMPERATURE
       }
     );
 
@@ -243,7 +254,10 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('OpenAI API error:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Invalid request', details: error.flatten() }, { status: 400 });
+    }
+    console.error('AI service error:', error);
     return NextResponse.json(
       { error: 'Kunde inte kontakta AI-tjänsten. Försök igen.' },
       { status: 500 }

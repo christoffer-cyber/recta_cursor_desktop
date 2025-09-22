@@ -1,6 +1,7 @@
 // RAG System for Recta - Knowledge-driven recruitment analysis
 import { getClaudeClient } from './claude-client';
 import { OpenAI } from 'openai'; // Still needed for embeddings
+import { OPENAI_EMBEDDING_MODEL, CLAUDE_MODEL, DEFAULT_MAX_TOKENS, DEFAULT_TEMPERATURE } from './ai-config';
 
 export interface KnowledgeChunk {
   id: string;
@@ -59,7 +60,7 @@ export class RectaRAGSystem {
   private async generateEmbedding(text: string): Promise<number[]> {
     try {
       const response = await this.openai.embeddings.create({
-        model: 'text-embedding-3-small',
+        model: OPENAI_EMBEDDING_MODEL,
         input: text,
       });
       return response.data[0].embedding;
@@ -152,9 +153,9 @@ export class RectaRAGSystem {
         ],
         systemPrompt,
         {
-          model: 'claude-3-5-sonnet-20241022',
-          maxTokens: 1500,
-          temperature: 0.7
+          model: CLAUDE_MODEL,
+          maxTokens: Math.min(DEFAULT_MAX_TOKENS, 1500),
+          temperature: DEFAULT_TEMPERATURE
         }
       );
 

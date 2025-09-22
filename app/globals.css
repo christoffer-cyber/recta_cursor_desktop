@@ -222,9 +222,9 @@ p, li { color: #374151; line-height: 1.7; }
 
 /* Arena interface - Premium consulting with consistent Inter */
 .arena-container { 
-  max-width: 1400px; 
-  margin: 0 auto; 
-  padding: 24px; 
+  max-width: none; 
+  margin: 0; 
+  padding: 0; 
   height: 100vh; 
   display: flex; 
   flex-direction: column;
@@ -235,14 +235,14 @@ p, li { color: #374151; line-height: 1.7; }
 .cluster-topbar {
   background: linear-gradient(135deg, hsl(var(--consulting-navy)), hsl(var(--consulting-blue)));
   border: none;
-  border-radius: 12px;
-  padding: 16px 24px;
-  margin-bottom: 24px;
+  border-radius: 0;
+  padding: 12px 16px;
+  margin-bottom: 0;
   display: flex;
   align-items: center;
   gap: 20px;
   overflow-x: auto;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
 }
 
 .cluster-steps {
@@ -257,10 +257,10 @@ p, li { color: #374151; line-height: 1.7; }
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
+  padding: 8px 12px;
   border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   white-space: nowrap;
   transition: all 0.3s ease;
   border: 2px solid transparent;
@@ -368,10 +368,9 @@ p, li { color: #374151; line-height: 1.7; }
 .arena-main { 
   flex: 1; 
   display: grid; 
-  grid-template-columns: 45% 55%; 
-  gap: 32px; 
+  grid-template-columns: 40% 60%; 
+  gap: 0; 
   min-height: 0;
-  padding: 0 24px;
 }
 
 .arena-chat-section { 
@@ -379,32 +378,29 @@ p, li { color: #374151; line-height: 1.7; }
   flex-direction: column; 
   min-height: 0;
   background: hsl(var(--consulting-white));
-  border: 1px solid hsl(var(--consulting-neutral-200));
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-right: 1px solid hsl(var(--consulting-neutral-200));
+  border-radius: 0;
+  padding: 16px 16px 0 16px;
 }
 
 .arena-canvas-section {
   display: flex;
   flex-direction: column;
   background: hsl(var(--consulting-white));
-  border: 1px solid hsl(var(--consulting-neutral-200));
-  border-radius: 12px;
-  padding: 24px;
+  border-left: 1px solid hsl(var(--consulting-neutral-200));
+  border-radius: 0;
+  padding: 0;
   overflow-y: auto;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  gap: 20px;
+  gap: 0;
+  aspect-ratio: 16 / 9;
+  align-self: stretch;
 }
 
 .canvas-header {
-  margin-bottom: 0;
-  padding-bottom: 20px;
-  border-bottom: 2px solid hsl(var(--consulting-blue-100));
+  margin: 0;
+  padding: 16px 20px;
+  border-bottom: 1px solid hsl(var(--consulting-neutral-200));
   background: linear-gradient(135deg, hsl(var(--consulting-blue-50)), hsl(var(--consulting-white)));
-  margin: -24px -24px 20px -24px;
-  padding: 20px 24px;
-  border-radius: 12px 12px 0 0;
 }
 
 .canvas-header h2 {
@@ -648,8 +644,8 @@ p, li { color: #374151; line-height: 1.7; }
   box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
   overflow: hidden;
 }
-.messages-area { flex: 1; padding: 32px; overflow-y: auto; }
-.message { display: flex; gap: 16px; margin-bottom: 24px; }
+.messages-area { flex: 1; padding: 24px; overflow-y: auto; }
+.message { display: flex; gap: 14px; margin-bottom: 20px; }
 .message.user { flex-direction: row-reverse; }
 .message-avatar { 
   width: 36px; 
@@ -689,14 +685,14 @@ p, li { color: #374151; line-height: 1.7; }
   align-items: center;
   justify-content: center;
 }
-.message-content { max-width: 75%; }
+.message-content { max-width: 80%; }
 .message.user .message-content { text-align: right; }
 .message-text { 
   background: hsl(var(--consulting-neutral-50)); 
-  padding: 18px 22px; 
-  border-radius: 1px; 
-  margin-bottom: 8px; 
-  line-height: 1.7;
+  padding: 16px 20px; 
+  border-radius: 6px; 
+  margin-bottom: 6px; 
+  line-height: 1.65;
   font-size: 15px;
   border: 1px solid hsl(var(--consulting-neutral-200));
   color: hsl(var(--consulting-neutral-800));
@@ -738,7 +734,7 @@ p, li { color: #374151; line-height: 1.7; }
 }
 
 .input-area { 
-  padding: 24px 32px; 
+  padding: 16px 20px; 
   border-top: 1px solid hsl(var(--windsurf-neutral-200)); 
   background: hsl(var(--windsurf-neutral-50));
 }
