@@ -1,0 +1,25 @@
+name: Assistant Push
+on:
+  workflow_dispatch:
+    inputs:
+      commit_message:
+        description: Commit message
+        required: false
+        default: "chore: assistant-triggered deploy"
+permissions:
+  contents: write
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PUSH_TOKEN }}
+          ref: main
+      - run: |
+          git config user.name "recta-assistant"
+          git config user.email "actions@users.noreply.github.com"
+          git pull --rebase origin main
+          git add -A || true
+          git commit -m "${{ github.event.inputs.commit_message }}" || git commit --allow-empty -m "${{ github.event.inputs.commit_message }}"
+          git push origin HEAD:main
