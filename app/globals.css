@@ -245,6 +245,43 @@ p, li { color: #374151; line-height: 1.7; }
   box-shadow: none;
 }
 
+@media (max-width: 768px) {
+  .cluster-topbar {
+    padding: 8px 12px;
+    gap: 12px;
+  }
+  
+  .cluster-steps {
+    gap: 8px;
+  }
+  
+  .cluster-step {
+    padding: 6px 10px;
+    font-size: 12px;
+    gap: 6px;
+  }
+  
+  .topbar-confidence {
+    display: none; /* Hide confidence bar on mobile to save space */
+  }
+}
+
+@media (max-width: 480px) {
+  .cluster-topbar {
+    padding: 6px 8px;
+    gap: 8px;
+  }
+  
+  .cluster-step {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+  
+  .step-confidence {
+    display: none; /* Hide individual confidence percentages on small screens */
+  }
+}
+
 .cluster-steps {
   display: flex;
   align-items: center;
@@ -379,6 +416,109 @@ p, li { color: #374151; line-height: 1.7; }
   grid-template-columns: 40% 60%; 
   gap: 0; 
   min-height: 0;
+}
+
+/* Responsive Design for Arena */
+@media (max-width: 1024px) {
+  .arena-main {
+    grid-template-columns: 45% 55%;
+  }
+  
+  .arena-title {
+    font-size: 2.5rem;
+  }
+  
+  .arena-subtitle {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .arena-main {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    min-height: auto;
+  }
+  
+  .arena-canvas-section {
+    aspect-ratio: 16 / 9;
+    min-height: 300px;
+    border-left: none;
+    border-top: 1px solid hsl(var(--consulting-neutral-200));
+  }
+  
+  .arena-chat-section {
+    border-right: none;
+    border-bottom: 1px solid hsl(var(--consulting-neutral-200));
+  }
+  
+  .arena-title {
+    font-size: 2rem;
+  }
+  
+  .arena-subtitle {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .arena-title {
+    font-size: 1.8rem;
+  }
+  
+  .arena-subtitle {
+    font-size: 0.8rem;
+  }
+  
+  .arena-chat-section {
+    padding: 12px;
+  }
+  
+  .arena-canvas-section {
+    min-height: 250px;
+  }
+  
+  .empty-icon {
+    font-size: 3rem;
+  }
+  
+  .empty-state h3 {
+    font-size: 1.2rem;
+  }
+  
+  .empty-state p {
+    font-size: 0.9rem;
+  }
+  
+  /* Chat responsiveness */
+  .setup-title {
+    font-size: 1.2rem;
+  }
+  
+  .setup-description {
+    font-size: 0.9rem;
+  }
+  
+  .form-input {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  .btn-lookup,
+  .btn-skip {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+  
+  .preview-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .preview-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
 }
 
 .arena-chat-section { 

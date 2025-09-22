@@ -17,6 +17,12 @@ export const metadata: Metadata = {
   description: "AI-powered plattform för rekryteringsförberedelser",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
