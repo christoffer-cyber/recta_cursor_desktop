@@ -184,8 +184,8 @@ export async function POST(request: NextRequest) {
     AKTUELLT FOKUS: ${currentCluster.toUpperCase().replace('-', ' ')}
     Confidence: ${clusters?.[currentCluster as ClusterType]?.confidence || 0}%
     
-    ${nextCluster !== currentCluster ? `
-    NÄSTA STEG: Övergå till ${nextCluster.toUpperCase().replace('-', ' ')} efter denna fråga.
+    ${nextCluster && nextCluster !== currentCluster ? `
+    NÄSTA STEG: Övergå till ${(nextCluster as string).toUpperCase().replace('-', ' ')} efter denna fråga.
     ` : ''}
     ` : ''}`;
 
