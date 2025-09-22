@@ -51,6 +51,11 @@ Börja med att hälsa och fråga om företaget och den tänkta rollen.`;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    console.log('Chat API request received:', { 
+      messagesCount: body.messages?.length || 0,
+      hasCurrentCluster: !!body.currentCluster,
+      hasClusters: !!body.clusters
+    });
     const Schema = z.object({
       messages: z.array(z.object({ role: z.enum(['user','assistant','system']), content: z.string() })).min(1),
       sessionId: z.string().optional(),
@@ -59,6 +64,15 @@ export async function POST(request: NextRequest) {
       clusters: z.record(z.string(), z.any()).optional(),
       overallConfidence: z.number().optional(),
     });
+    const parseResult = Schema.safeParse(body);
+    if (!parseResult.success) {
+      console.error('Invalid request data:', parseResult.error.issues);
+      return NextResponse.json({ 
+        error: 'Invalid request data', 
+        details: parseResult.error.issues 
+      }, { status: 400 });
+    }
+    
     const { 
       messages, 
       sessionId, 
@@ -66,7 +80,7 @@ export async function POST(request: NextRequest) {
       currentCluster,
       clusters,
       overallConfidence 
-    } = Schema.parse(body);
+    } = parseResult.data;
 
     // Get latest user message for RAG enhancement
     const latestUserMessage = messages[messages.length - 1];
@@ -75,26 +89,34 @@ export async function POST(request: NextRequest) {
 
     // 🤖 Company Intelligence Agent - detect company names and trigger background processing
     if (latestUserMessage && latestUserMessage.role === 'user') {
-      const detectedCompany = detectCompanyName(latestUserMessage.content);
-      if (detectedCompany) {
-        console.log(`🏢 Company detected: ${detectedCompany} - triggering background intelligence gathering`);
-        
-        // Trigger background company intelligence (don't await - let it run in background)
-        const companyAgent = new CompanyIntelligenceAgent();
-        companyAgent.gatherCompanyIntelligence(detectedCompany)
-          .then(companyData => {
-            if (companyData) {
-              console.log(`✅ Company intelligence completed for ${detectedCompany}:`, {
-                revenue: companyData.financial.revenue,
-                employees: companyData.financial.employees,
-                industry: companyData.industry.industry
+      try {
+        const detectedCompany = detectCompanyName(latestUserMessage.content);
+        if (detectedCompany) {
+          console.log(`🏢 Company detected: ${detectedCompany} - triggering background intelligence gathering`);
+          
+          // Trigger background company intelligence (don't await - let it run in background)
+          try {
+            const companyAgent = new CompanyIntelligenceAgent();
+            companyAgent.gatherCompanyIntelligence(detectedCompany)
+              .then(companyData => {
+                if (companyData) {
+                  console.log(`✅ Company intelligence completed for ${detectedCompany}:`, {
+                    revenue: companyData.financial.revenue,
+                    employees: companyData.financial.employees,
+                    industry: companyData.industry
+                  });
+                  // TODO: Store this data for later use in report generation
+                }
+              })
+              .catch(error => {
+                console.error(`❌ Company intelligence failed for ${detectedCompany}:`, error);
               });
-              // TODO: Store this data for later use in report generation
-            }
-          })
-          .catch(error => {
-            console.error(`❌ Company intelligence failed for ${detectedCompany}:`, error);
-          });
+          } catch (agentError) {
+            console.error('❌ Failed to create CompanyIntelligenceAgent:', agentError);
+          }
+        }
+      } catch (detectionError) {
+        console.error('❌ Company name detection failed:', detectionError);
       }
     }
 
@@ -222,15 +244,24 @@ export async function POST(request: NextRequest) {
       content: msg.content
     }));
 
-    const response = await claude.chat(
-      claudeMessages,
-      enhancedSystemPrompt, // System prompt goes separately in Claude
-      {
-        model: CLAUDE_MODEL,
-        maxTokens: Math.min(DEFAULT_MAX_TOKENS, 400),
-        temperature: DEFAULT_TEMPERATURE
-      }
-    );
+    let response;
+    try {
+      response = await claude.chat(
+        claudeMessages,
+        enhancedSystemPrompt, // System prompt goes separately in Claude
+        {
+          model: CLAUDE_MODEL,
+          maxTokens: Math.min(DEFAULT_MAX_TOKENS, 400),
+          temperature: DEFAULT_TEMPERATURE
+        }
+      );
+    } catch (claudeError) {
+      console.error('Claude API error:', claudeError);
+      return NextResponse.json({ 
+        error: 'AI service temporarily unavailable',
+        details: claudeError instanceof Error ? claudeError.message : 'Unknown error'
+      }, { status: 500 });
+    }
 
     const aiResponse = response.content || "Jag kunde inte generera ett svar. Försök igen.";
     
