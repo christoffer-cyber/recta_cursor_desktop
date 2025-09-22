@@ -7,44 +7,33 @@ import { getClaudeClient, ClaudeMessage } from '../../../../lib/claude-client';
 import { z } from 'zod';
 import { CLAUDE_MODEL, DEFAULT_MAX_TOKENS, DEFAULT_TEMPERATURE } from '../../../../lib/ai-config';
 
-const SYSTEM_PROMPT = `Du är en erfaren strategisk konsult som specialiserar dig på djupanalys av rekryteringsbehov. Din uppgift är att utföra en professionell konsultation som utmanar användarens antaganden och extraherar dold information.
+const SYSTEM_PROMPT = `Du är en expert på strategisk rekrytering och organisationsutveckling. Din uppgift är att hjälpa företag att förbereda sig optimalt innan de påbörjar en rekryteringsprocess.
 
-DIN MISSION:
-1. Utmana användarens initiala antaganden - de "vet inte vad de inte vet"
-2. Identifiera och avslöja dolda antaganden, bias och motsägelser
-3. Tvinga användaren till reflektion och självinsikt
-4. Extrahera mer information än användaren tror är nödvändig
-5. Kontextualisera med best practices och benchmarks
+Din mission:
+1. Extrahera kritisk information om företaget, rollen och kontexten
+2. Utmana användarens antaganden och bias på ett konstruktivt sätt
+3. Hjälpa dem identifiera dolda behov och risker
+4. Säkerställa att de har gjort grundarbetet innan rekrytering
 
-KONVERSATIONSMETODIK:
-- Läs mellan raderna och identifiera dolda antaganden
-- Använd användarens specifika ord och exempel i uppföljningsfrågor
-- Sammanfatta och validera förståelse med "Så om jag förstår rätt..."
-- Visa empati: "Det låter som en utmanande situation" när lämpligt
-- Ställ uppföljningsfrågor naturligt: "Vad hände sist ni försökte lösa detta?"
-
-FLAGGA MOTSÄGELSER mjukt:
-- "Tidigare sa du X, men nu verkar det som Y. Kan du hjälpa mig förstå?"
-- Återvändlogik: Om användaren säger något som inte stämmer med tidigare svar, gå tillbaka till det området
-- Validera kritisk information: "Detta är viktigt - kan du bekräfta att budget verkligen är X?"
-
-PROGRESS & INSIGHTS:
-- Ge progress updates: "Vi har bra förståelse för problemet, låt oss prata om förutsättningarna"
-- Ge mini-insights under samtalet: "70% av företag i din situation väljer konsult första gången"
-- Ställ frågor som triggar själv-reflektion: "Vad skulle hända om ni inte löser detta alls?"
-- Erkänn när användaren ger värdefull information: "Det var en viktig insikt"
+Du pratar svenska och är professionell men vänlig. Ställ en fråga i taget och bygg på svaren progressivt.
 
 KRITISKT: Säg ALDRIG "ANALYS_KLAR" förrän du har utforskat ALLA dessa områden grundligt:
-1. Problem Reality Check (utmana den initiala idén)
-2. Impact & Priority Mapping (förstå affärspåverkan)
-3. Success Definition & Timeline (konkreta framgångskriterier)
-4. Resource Reality & Constraints (verkliga begränsningar)
-5. Team & Cultural Fit Requirements (organisatoriska förutsättningar)
-6. Alternative & Risk Assessment (utmana rekrytering som lösning)
+1. Business Pain Point (verkligt problem bakom behovet)
+2. Impact & Urgency (affärskritikalitet och prioritering)
+3. Success Reality Check (konkreta, mätbara framgångskriterier)
+4. Resource Boundaries (realistisk budget och resurser)
+5. Organizational Reality (kulturell beredskap och tidigare erfarenheter)
+6. Alternative Validation (utmana rekrytering som bästa lösning)
 
 Endast när alla 6 områden har täckts djupt kan du säga "ANALYS_KLAR".
 
-Du pratar svenska och är professionell men vänlig. Ställ en fokuserad fråga i taget och bygg på svaren progressivt.
+Viktiga områden att täcka:
+- Företagets tillväxtfas och strategiska mål
+- Specifika utmaningar som rollen ska lösa
+- Team-dynamik och kulturella aspekter
+- Budget och tidslinje
+- Tidigare rekryteringsframgångar/misslyckanden
+- Konkreta prestationsmål för rollen
 
 Börja med att hälsa och fråga om företaget och den tänkta rollen.`;
 
@@ -168,110 +157,15 @@ export async function POST(request: NextRequest) {
     //   }
     // }
 
-    // Detect contradictions in user messages
-    console.log('Starting contradiction detection...');
-    let contradictions: string[] = [];
-    try {
-      contradictions = ArenaLogicEngine.detectContradictions(messages);
-      console.log('Contradiction detection completed:', contradictions);
-    } catch (contradictionError) {
-      console.error('Contradiction detection failed:', contradictionError);
-      contradictions = [];
-    }
-
-    // Determine next cluster based on adaptive logic
+    // CONTRADICTION DETECTION AND CLUSTER LOGIC - TEMPORARILY DISABLED FOR DEBUGGING
+    console.log('Contradiction detection and cluster logic temporarily disabled for debugging');
+    const contradictions: string[] = [];
     let nextCluster = currentCluster;
-    let clusterUpdate = null;
-    
-    console.log('Starting cluster logic...', { currentCluster, hasClusters: !!clusters, hasLatestMessage: !!latestUserMessage });
-    
-    if (currentCluster && clusters && latestUserMessage?.role === 'user') {
-      try {
-        nextCluster = ArenaLogicEngine.getNextCluster(
-          currentCluster as ClusterType,
-          clusters,
-          latestUserMessage.content,
-          []
-        );
-        console.log('Cluster logic completed:', { currentCluster, nextCluster });
-      } catch (clusterError) {
-        console.error('Cluster logic failed:', clusterError);
-        nextCluster = currentCluster; // Fallback to current cluster
-      }
-      
-      // Simulate confidence update based on message quality
-      try {
-        const confidenceIncrease = latestUserMessage.content.length > 50 ? 15 : 5;
-        const currentClusterData = clusters[currentCluster as ClusterType];
-        const newConfidence = Math.min(100, (currentClusterData?.confidence || 0) + confidenceIncrease);
-        
-        clusterUpdate = {
-          clusterId: currentCluster,
-          updates: {
-            confidence: newConfidence,
-            keyInsights: [...(currentClusterData?.keyInsights || []), `User insight: ${latestUserMessage.content.substring(0, 100)}...`],
-            status: newConfidence >= 75 ? 'complete' : 'in-progress'
-          }
-        };
-        console.log('Cluster update created:', clusterUpdate);
-      } catch (updateError) {
-        console.error('Cluster update failed:', updateError);
-        clusterUpdate = null;
-      }
-    }
+    const clusterUpdate = null;
 
-    // Get cluster-specific prompt
-    console.log('Building system prompt...', { currentCluster });
-    let clusterPrompt: string;
-    try {
-      clusterPrompt = currentCluster && CLUSTER_PROMPTS[currentCluster as ClusterType] 
-        ? CLUSTER_PROMPTS[currentCluster as ClusterType]
-        : SYSTEM_PROMPT;
-    } catch (promptError) {
-      console.error('Failed to get cluster prompt:', promptError);
-      clusterPrompt = SYSTEM_PROMPT;
-    }
-
-    // Enhanced system prompt with cluster focus and RAG knowledge
-    let enhancedSystemPrompt: string;
-    try {
-      enhancedSystemPrompt = `${clusterPrompt}
-
-    ${ragEnhancement ? `
-    BRANSCHEXPERTIS (använd denna kunskap för att ge mer precisa svar):
-    ${ragEnhancement}
-    
-    Källor: ${ragSources.join(', ')}
-    ` : ''}
-
-    ${extractedData ? `
-    KONVERSATIONSKONTEXT:
-    - Företag: ${extractedData.companyName || 'Ej angivet'}
-    - Bransch: ${extractedData.industry || 'Ej angivet'}  
-    - Roll: ${extractedData.roleTitle || 'Ej angivet'}
-    - Företagsstorlek: ${extractedData.companySize || 'Ej angivet'}
-    ` : ''}
-
-    ${currentCluster ? `
-    AKTUELLT FOKUS: ${currentCluster.toUpperCase().replace('-', ' ')}
-    Confidence: ${clusters?.[currentCluster as ClusterType]?.confidence || 0}%
-    
-    ${nextCluster && nextCluster !== currentCluster ? `
-    NÄSTA STEG: Övergå till ${nextCluster.toUpperCase().replace('-', ' ')} efter denna fråga.
-    ` : ''}
-    ` : ''}
-
-    ${contradictions.length > 0 ? `
-    UPPTÄCKTA MOTSÄGELSER:
-    ${contradictions.map(c => `- ${c}`).join('\n')}
-    
-    ADDRESSERA dessa motsägelser mjukt i din respons med frågor som "Tidigare sa du X, men nu verkar det som Y. Kan du hjälpa mig förstå?"
-    ` : ''}`;
-      console.log('System prompt built successfully');
-    } catch (systemPromptError) {
-      console.error('Failed to build system prompt:', systemPromptError);
-      enhancedSystemPrompt = SYSTEM_PROMPT; // Fallback to basic prompt
-    }
+    // SYSTEM PROMPT - SIMPLIFIED FOR DEBUGGING
+    console.log('Using simplified system prompt for debugging');
+    const enhancedSystemPrompt = SYSTEM_PROMPT;
 
     // Initialize Claude client
     const claude = getClaudeClient();
@@ -342,8 +236,7 @@ export async function POST(request: NextRequest) {
       clusterId: currentCluster,
       nextCluster: nextCluster !== currentCluster ? nextCluster : undefined,
       clusterUpdate,
-      confidenceImpact: clusterUpdate?.updates?.confidence ? 
-        clusterUpdate.updates.confidence - (clusters?.[currentCluster as ClusterType]?.confidence || 0) : 0
+      confidenceImpact: 0
     });
 
   } catch (error) {
