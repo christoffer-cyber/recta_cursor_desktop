@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
     // CLUSTER LOGIC - RE-ENABLED FOR TESTING
     console.log('Starting cluster logic...', { currentCluster, hasClusters: !!clusters, hasLatestMessage: !!latestUserMessage });
     let nextCluster = currentCluster;
-    let clusterUpdate: any = null;
+    let clusterUpdate: { clusterId: string; updates: { confidence: number; status: string; lastUpdated: string } } | null = null;
     
     if (currentCluster && clusters && latestUserMessage?.role === 'user') {
       try {
