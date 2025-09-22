@@ -144,23 +144,34 @@ export default function Arena() {
         }));
       }
       
-      // Update current cluster if AI suggests switching
+      // Update current cluster if AI suggests switching (only if unlocked)
       if (data.nextCluster && data.nextCluster !== currentCluster) {
         const nextCluster = data.nextCluster as ClusterType;
-        setCurrentCluster(nextCluster);
         
-        // Update cluster status
-        setClusters(prev => ({
-          ...prev,
-          [nextCluster]: {
-            ...prev[nextCluster],
-            status: 'in-progress'
-          },
-          [currentCluster]: {
-            ...prev[currentCluster],
-            status: prev[currentCluster].confidence >= 75 ? 'complete' : 'needs-revisit'
-          }
-        }));
+        // Check if next cluster is unlocked
+        const clusterEntries = Object.entries(CLUSTER_DEFINITIONS);
+        const currentIndex = clusterEntries.findIndex(([id]) => id === currentCluster);
+        const nextIndex = clusterEntries.findIndex(([id]) => id === nextCluster);
+        
+        // Only switch if next cluster is unlocked (previous step completed or is first step)
+        const isNextUnlocked = nextIndex === 0 || (nextIndex > 0 && clusters[clusterEntries[nextIndex - 1][0] as ClusterType]?.confidence >= 75);
+        
+        if (isNextUnlocked) {
+          setCurrentCluster(nextCluster);
+          
+          // Update cluster status
+          setClusters(prev => ({
+            ...prev,
+            [nextCluster]: {
+              ...prev[nextCluster],
+              status: 'in-progress'
+            },
+            [currentCluster]: {
+              ...prev[currentCluster],
+              status: prev[currentCluster].confidence >= 75 ? 'complete' : 'needs-revisit'
+            }
+          }));
+        }
       }
       
       // Update overall confidence
@@ -595,127 +606,18 @@ export default function Arena() {
         <div className="arena-canvas-section">
           <div className="canvas-header">
             <h2>Analyskanvas</h2>
-            <p>Real-time insights och framsteg</p>
+            <p>Chatta för att fylla i analysen</p>
           </div>
           
-          {/* Setup Phase Canvas */}
-          {currentStep === 'setup' && (
-            <div className="canvas-setup">
-              <ProgressIndicator 
-                steps={progressSteps} 
-                currentStep={currentStep}
-              />
-              <div className="setup-stats">
-                <div className="stat-card">
-                  <div className="stat-number">{companyName.length > 0 ? '1' : '0'}</div>
-                  <div className="stat-label">Företag angivet</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-number">{companyIntelligence ? '1' : '0'}</div>
-                  <div className="stat-label">Data hämtad</div>
-                </div>
+          <div className="canvas-content">
+            <div className="empty-canvas">
+              <div className="empty-state">
+                <div className="empty-icon">💬</div>
+                <h3>Starta konversationen</h3>
+                <p>Chatta med AI:n för att börja bygga upp din rekryteringsanalys. Alla dina svar kommer att samlas här för att skapa en komplett bild.</p>
               </div>
             </div>
-          )}
-          
-          {/* Conversation Phase Canvas */}
-          {currentStep === 'conversation' && (
-            <div className="canvas-conversation">
-              {/* Current Cluster Focus */}
-              <div className="cluster-focus-section">
-                <h3 className="section-title">
-                  <span>🎯</span>
-                  Aktuellt Fokus
-                </h3>
-                <div className="cluster-focus-card">
-                  <div className="focus-header">
-                    <span className="focus-name">
-                      {CLUSTER_DEFINITIONS[currentCluster]?.name || 'Okänt kluster'}
-                    </span>
-                    <span className="focus-confidence">
-                      {clusters[currentCluster]?.confidence || 0}%
-                    </span>
-                  </div>
-                  <p className="focus-description">
-                    {CLUSTER_DEFINITIONS[currentCluster]?.description || 'Ingen beskrivning'}
-                  </p>
-                </div>
-              </div>
-              
-              {/* Live Insights Panel removed */}
-              
-              {/* Conversation Stats */}
-              <div className="conversation-stats">
-                <h3 className="section-title">
-                  <span>📊</span>
-                  Framsteg
-                </h3>
-                <div className="stats-grid">
-                  <div className="stat-card">
-                    <div className="stat-number">{messages.length}</div>
-                    <div className="stat-label">Meddelanden</div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-number">{Math.floor(messages.length / 2)}</div>
-                    <div className="stat-label">Frågor besvarade</div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-number">{overallConfidence}%</div>
-                    <div className="stat-label">Total säkerhet</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Processing Phase Canvas */}
-          {(currentStep === 'extracting' || currentStep === 'preview' || currentStep === 'generating') && (
-            <div className="canvas-processing">
-              <ProgressIndicator 
-                steps={progressSteps} 
-                currentStep={currentStep}
-              />
-              <div className="analysis-summary">
-                <h3 className="section-title">
-                  <span>📋</span>
-                  Analys Sammanfattning
-                </h3>
-                <div className="confidence-display">
-                  <span className="confidence-label">Total säkerhet: {overallConfidence}%</span>
-                  <div className="confidence-bar">
-                    <div 
-                      className="confidence-fill" 
-                      style={{ width: `${overallConfidence}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Company Intelligence Display */}
-          {companyIntelligence && (
-            <div className="company-intelligence-display">
-              <h3 className="section-title">
-                <span>🏢</span>
-                Företagsdata
-              </h3>
-              <div className="intelligence-grid">
-                <div className="intelligence-item">
-                  <span className="item-label">Namn:</span>
-                  <span className="item-value">{companyIntelligence?.basicInfo?.legalName || 'Ej tillgängligt'}</span>
-                </div>
-                <div className="intelligence-item">
-                  <span className="item-label">Org.nr:</span>
-                  <span className="item-value">{companyIntelligence?.basicInfo?.organizationNumber || 'Ej tillgängligt'}</span>
-                </div>
-                <div className="intelligence-item">
-                  <span className="item-label">Status:</span>
-                  <span className="item-value">{companyIntelligence?.basicInfo?.status || 'Ej tillgängligt'}</span>
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
 

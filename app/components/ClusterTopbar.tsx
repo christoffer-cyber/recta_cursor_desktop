@@ -15,11 +15,22 @@ export default function ClusterTopbar({
   overallConfidence 
 }: ClusterTopbarProps) {
   
-  const getStepIcon = (status: string, confidence: number) => {
+  const getStepIcon = (status: string, confidence: number, isLocked: boolean) => {
+    if (isLocked) return '🔒';
     if (status === 'complete' || confidence >= 75) return '✓';
     if (status === 'in-progress') return '●';
     if (status === 'needs-revisit') return '!';
     return '○';
+  };
+
+  const isStepLocked = (clusterId: ClusterType, index: number) => {
+    // First step is always available
+    if (index === 0) return false;
+    
+    // Check if previous step is completed (confidence >= 75)
+    const previousClusterId = Object.keys(CLUSTER_DEFINITIONS)[index - 1] as ClusterType;
+    const previousCluster = clusters[previousClusterId];
+    return !previousCluster || previousCluster.confidence < 75;
   };
 
   const getStepName = (clusterId: ClusterType) => {
@@ -37,25 +48,27 @@ export default function ClusterTopbar({
   return (
     <div className="cluster-topbar">
       <div className="cluster-steps">
-        {Object.entries(CLUSTER_DEFINITIONS).map(([clusterId, definition]) => {
+        {Object.entries(CLUSTER_DEFINITIONS).map(([clusterId, definition], index) => {
           const cluster = clusters[clusterId as ClusterType];
           const isCurrent = clusterId === currentCluster;
           const confidence = cluster?.confidence || 0;
           const status = cluster?.status || 'not-started';
+          const isLocked = isStepLocked(clusterId as ClusterType, index);
           
           return (
             <div 
               key={clusterId}
-              className={`cluster-step ${status} ${isCurrent ? 'current' : ''}`}
+              className={`cluster-step ${status} ${isCurrent ? 'current' : ''} ${isLocked ? 'locked' : ''}`}
+              title={isLocked ? 'Slutför föregående steg för att låsa upp' : ''}
             >
-              <div className={`step-icon ${status}`}>
-                {getStepIcon(status, confidence)}
+              <div className={`step-icon ${status} ${isLocked ? 'locked' : ''}`}>
+                {getStepIcon(status, confidence, isLocked)}
               </div>
               <span className="step-name">
                 {getStepName(clusterId as ClusterType)}
               </span>
               <span className="step-confidence">
-                {confidence}%
+                {isLocked ? '🔒' : `${confidence}%`}
               </span>
             </div>
           );

@@ -291,6 +291,14 @@ p, li { color: #374151; line-height: 1.7; }
   border-color: rgba(255, 193, 7, 0.6);
 }
 
+.cluster-step.locked {
+  background: rgba(128, 128, 128, 0.3);
+  color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(128, 128, 128, 0.4);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .step-icon {
   width: 16px;
   height: 16px;
@@ -394,6 +402,41 @@ p, li { color: #374151; line-height: 1.7; }
   gap: 0;
   aspect-ratio: 16 / 9;
   align-self: stretch;
+}
+
+.canvas-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.empty-canvas {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.empty-state {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: hsl(var(--consulting-navy));
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+  color: hsl(var(--consulting-neutral-600));
+  line-height: 1.6;
 }
 
 .canvas-header {
