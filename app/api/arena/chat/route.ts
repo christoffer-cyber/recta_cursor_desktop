@@ -164,42 +164,73 @@ export async function POST(request: NextRequest) {
     }
 
     // Detect contradictions in user messages
-    const contradictions = ArenaLogicEngine.detectContradictions(messages);
+    console.log('Starting contradiction detection...');
+    let contradictions: string[] = [];
+    try {
+      contradictions = ArenaLogicEngine.detectContradictions(messages);
+      console.log('Contradiction detection completed:', contradictions);
+    } catch (contradictionError) {
+      console.error('Contradiction detection failed:', contradictionError);
+      contradictions = [];
+    }
 
     // Determine next cluster based on adaptive logic
     let nextCluster = currentCluster;
     let clusterUpdate = null;
     
+    console.log('Starting cluster logic...', { currentCluster, hasClusters: !!clusters, hasLatestMessage: !!latestUserMessage });
+    
     if (currentCluster && clusters && latestUserMessage?.role === 'user') {
-      nextCluster = ArenaLogicEngine.getNextCluster(
-        currentCluster as ClusterType,
-        clusters,
-        latestUserMessage.content,
-        []
-      );
+      try {
+        nextCluster = ArenaLogicEngine.getNextCluster(
+          currentCluster as ClusterType,
+          clusters,
+          latestUserMessage.content,
+          []
+        );
+        console.log('Cluster logic completed:', { currentCluster, nextCluster });
+      } catch (clusterError) {
+        console.error('Cluster logic failed:', clusterError);
+        nextCluster = currentCluster; // Fallback to current cluster
+      }
       
       // Simulate confidence update based on message quality
-      const confidenceIncrease = latestUserMessage.content.length > 50 ? 15 : 5;
-      const currentClusterData = clusters[currentCluster as ClusterType];
-      const newConfidence = Math.min(100, (currentClusterData?.confidence || 0) + confidenceIncrease);
-      
-      clusterUpdate = {
-        clusterId: currentCluster,
-        updates: {
-          confidence: newConfidence,
-          keyInsights: [...(currentClusterData?.keyInsights || []), `User insight: ${latestUserMessage.content.substring(0, 100)}...`],
-          status: newConfidence >= 75 ? 'complete' : 'in-progress'
-        }
-      };
+      try {
+        const confidenceIncrease = latestUserMessage.content.length > 50 ? 15 : 5;
+        const currentClusterData = clusters[currentCluster as ClusterType];
+        const newConfidence = Math.min(100, (currentClusterData?.confidence || 0) + confidenceIncrease);
+        
+        clusterUpdate = {
+          clusterId: currentCluster,
+          updates: {
+            confidence: newConfidence,
+            keyInsights: [...(currentClusterData?.keyInsights || []), `User insight: ${latestUserMessage.content.substring(0, 100)}...`],
+            status: newConfidence >= 75 ? 'complete' : 'in-progress'
+          }
+        };
+        console.log('Cluster update created:', clusterUpdate);
+      } catch (updateError) {
+        console.error('Cluster update failed:', updateError);
+        clusterUpdate = null;
+      }
     }
 
     // Get cluster-specific prompt
-    const clusterPrompt = currentCluster && CLUSTER_PROMPTS[currentCluster as ClusterType] 
-      ? CLUSTER_PROMPTS[currentCluster as ClusterType]
-      : SYSTEM_PROMPT;
+    console.log('Building system prompt...', { currentCluster });
+    let clusterPrompt: string;
+    try {
+      clusterPrompt = currentCluster && CLUSTER_PROMPTS[currentCluster as ClusterType] 
+        ? CLUSTER_PROMPTS[currentCluster as ClusterType]
+        : SYSTEM_PROMPT;
+    } catch (promptError) {
+      console.error('Failed to get cluster prompt:', promptError);
+      clusterPrompt = SYSTEM_PROMPT;
+    }
 
     // Enhanced system prompt with cluster focus and RAG knowledge
-    const enhancedSystemPrompt = `${clusterPrompt}
+    let enhancedSystemPrompt: string;
+    try {
+      enhancedSystemPrompt = `${clusterPrompt}
 
     ${ragEnhancement ? `
     BRANSCHEXPERTIS (använd denna kunskap för att ge mer precisa svar):
@@ -231,6 +262,11 @@ export async function POST(request: NextRequest) {
     
     ADDRESSERA dessa motsägelser mjukt i din respons med frågor som "Tidigare sa du X, men nu verkar det som Y. Kan du hjälpa mig förstå?"
     ` : ''}`;
+      console.log('System prompt built successfully');
+    } catch (systemPromptError) {
+      console.error('Failed to build system prompt:', systemPromptError);
+      enhancedSystemPrompt = SYSTEM_PROMPT; // Fallback to basic prompt
+    }
 
     // Initialize Claude client
     const claude = getClaudeClient();
