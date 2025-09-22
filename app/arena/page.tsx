@@ -416,7 +416,7 @@ export default function Arena() {
       )}
 
       <div className="arena-main">
-        {/* Left: Chat Section (60%) */}
+        {/* LEFT: Chat Section (30%) */}
         <div className="arena-chat-section">
           {currentStep === 'setup' && (
             <div className="company-setup">
@@ -655,25 +655,26 @@ export default function Arena() {
           )}
         </div>
 
-        {/* Right: Canvas Section (70%) */}
+        {/* RIGHT: Canvas Section (70%) */}
         <div className="arena-canvas-section">
           <div className="canvas-header">
             <h2>Analyskanvas</h2>
             <p>Real-time insights och framsteg</p>
           </div>
           
+          {/* Setup Phase Canvas */}
           {currentStep === 'setup' && (
-            <div className="setup-progress">
+            <div className="canvas-setup">
               <ProgressIndicator 
                 steps={progressSteps} 
                 currentStep={currentStep}
               />
-              <div className="progress-stats">
-                <div className="stat-item">
+              <div className="setup-stats">
+                <div className="stat-card">
                   <div className="stat-number">{companyName.length > 0 ? '1' : '0'}</div>
                   <div className="stat-label">Företag angivet</div>
                 </div>
-                <div className="stat-item">
+                <div className="stat-card">
                   <div className="stat-number">{companyIntelligence ? '1' : '0'}</div>
                   <div className="stat-label">Data hämtad</div>
                 </div>
@@ -681,25 +682,27 @@ export default function Arena() {
             </div>
           )}
           
+          {/* Conversation Phase Canvas */}
           {currentStep === 'conversation' && (
-            <>
-              {/* Canvas content for conversation phase */}
-              <div className="canvas-conversation-content">
-                <h4 className="canvas-section-title">Aktuellt Fokus</h4>
-                <div className="current-cluster-detail">
-                  <div className="cluster-focus-card">
-                    <div className="focus-header">
-                      <span className="focus-name">
-                        {CLUSTER_DEFINITIONS[currentCluster]?.name || 'Okänt kluster'}
-                      </span>
-                      <span className="focus-confidence">
-                        {clusters[currentCluster]?.confidence || 0}%
-                      </span>
-                    </div>
-                    <p className="focus-description">
-                      {CLUSTER_DEFINITIONS[currentCluster]?.description || 'Ingen beskrivning'}
-                    </p>
+            <div className="canvas-conversation">
+              {/* Current Cluster Focus */}
+              <div className="cluster-focus-section">
+                <h3 className="section-title">
+                  <span>🎯</span>
+                  Aktuellt Fokus
+                </h3>
+                <div className="cluster-focus-card">
+                  <div className="focus-header">
+                    <span className="focus-name">
+                      {CLUSTER_DEFINITIONS[currentCluster]?.name || 'Okänt kluster'}
+                    </span>
+                    <span className="focus-confidence">
+                      {clusters[currentCluster]?.confidence || 0}%
+                    </span>
                   </div>
+                  <p className="focus-description">
+                    {CLUSTER_DEFINITIONS[currentCluster]?.description || 'Ingen beskrivning'}
+                  </p>
                 </div>
               </div>
               
@@ -709,66 +712,76 @@ export default function Arena() {
                 currentCluster={currentCluster}
               />
               
-              {/* Future space for additional canvas features */}
-              <div className="canvas-future-space">
-                {/* This space is reserved for upcoming features like benchmarks, and recommendations */}
-              </div>
-            </>
-          )}
-          
-          {(currentStep === 'extracting' || currentStep === 'preview' || currentStep === 'generating') && (
-            <div className="final-progress">
-              <ProgressIndicator 
-                steps={progressSteps} 
-                currentStep={currentStep}
-              />
-              <div className="cluster-summary">
-                <h4>Analys Sammanfattning</h4>
-                <div className="confidence-summary">
-                  <span>Total säkerhet: {overallConfidence}%</span>
-                  <div className="confidence-bar">
-                    <div 
-                      className="confidence-fill" 
-                      style={{ width: `${overallConfidence}%` }}
-                    ></div>
+              {/* Conversation Stats */}
+              <div className="conversation-stats">
+                <h3 className="section-title">
+                  <span>📊</span>
+                  Framsteg
+                </h3>
+                <div className="stats-grid">
+                  <div className="stat-card">
+                    <div className="stat-number">{messages.length}</div>
+                    <div className="stat-label">Meddelanden</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-number">{Math.floor(messages.length / 2)}</div>
+                    <div className="stat-label">Frågor besvarade</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-number">{overallConfidence}%</div>
+                    <div className="stat-label">Total säkerhet</div>
                   </div>
                 </div>
               </div>
             </div>
           )}
-
-          {currentStep === 'conversation' && (
-            <div className="progress-stats">
-              <div className="stat-item">
-                <div className="stat-number">{messages.length}</div>
-                <div className="stat-label">Meddelanden</div>
-              </div>
-              <div className="stat-item">
-                <div className="stat-number">{Math.floor(messages.length / 2)}</div>
-                <div className="stat-label">Frågor besvarade</div>
+          
+          {/* Processing Phase Canvas */}
+          {(currentStep === 'extracting' || currentStep === 'preview' || currentStep === 'generating') && (
+            <div className="canvas-processing">
+              <ProgressIndicator 
+                steps={progressSteps} 
+                currentStep={currentStep}
+              />
+              <div className="analysis-summary">
+                <h3 className="section-title">
+                  <span>📋</span>
+                  Analys Sammanfattning
+                </h3>
+                <div className="confidence-display">
+                  <span className="confidence-label">Total säkerhet: {overallConfidence}%</span>
+                  <div className="confidence-bar">
+                    <div 
+                      className="confidence-fill" 
+                      style={{ width: `${overallConfidence}%` }}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           )}
           
+          {/* Company Intelligence Display */}
           {companyIntelligence && (
-            <div className="extracted-summary">
-              <h4>Företagsdata</h4>
-              <ul>
-                <li>Namn: {companyIntelligence?.basicInfo?.legalName || 'Ej tillgängligt'}</li>
-                <li>Org.nr: {companyIntelligence?.basicInfo?.organizationNumber || 'Ej tillgängligt'}</li>
-                <li>Status: {companyIntelligence?.basicInfo?.status || 'Ej tillgängligt'}</li>
-              </ul>
-            </div>
-          )}
-          
-          {extractedData && (
-            <div className="extracted-summary">
-              <h4>Extraherad data</h4>
-              <ul>
-                <li>Företag: {String(extractedData.companyName || 'Ej angivet')}</li>
-                <li>Roll: {String(extractedData.roleTitle || 'Ej angivet')}</li>
-                <li>Bransch: {String(extractedData.industry || 'Ej angivet')}</li>
-              </ul>
+            <div className="company-intelligence-display">
+              <h3 className="section-title">
+                <span>🏢</span>
+                Företagsdata
+              </h3>
+              <div className="intelligence-grid">
+                <div className="intelligence-item">
+                  <span className="item-label">Namn:</span>
+                  <span className="item-value">{companyIntelligence?.basicInfo?.legalName || 'Ej tillgängligt'}</span>
+                </div>
+                <div className="intelligence-item">
+                  <span className="item-label">Org.nr:</span>
+                  <span className="item-value">{companyIntelligence?.basicInfo?.organizationNumber || 'Ej tillgängligt'}</span>
+                </div>
+                <div className="intelligence-item">
+                  <span className="item-label">Status:</span>
+                  <span className="item-value">{companyIntelligence?.basicInfo?.status || 'Ej tillgängligt'}</span>
+                </div>
+              </div>
             </div>
           )}
         </div>
