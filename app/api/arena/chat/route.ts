@@ -157,15 +157,89 @@ export async function POST(request: NextRequest) {
     //   }
     // }
 
-    // CONTRADICTION DETECTION AND CLUSTER LOGIC - TEMPORARILY DISABLED FOR DEBUGGING
-    console.log('Contradiction detection and cluster logic temporarily disabled for debugging');
+    // CONTRADICTION DETECTION - TEMPORARILY DISABLED FOR DEBUGGING
+    console.log('Contradiction detection temporarily disabled for debugging');
     const contradictions: string[] = [];
+    
+    // CLUSTER LOGIC - RE-ENABLED FOR TESTING
+    console.log('Starting cluster logic...', { currentCluster, hasClusters: !!clusters, hasLatestMessage: !!latestUserMessage });
     let nextCluster = currentCluster;
-    const clusterUpdate = null;
+    let clusterUpdate: any = null;
+    
+    if (currentCluster && clusters && latestUserMessage?.role === 'user') {
+      try {
+        nextCluster = ArenaLogicEngine.getNextCluster(
+          currentCluster as ClusterType,
+          clusters,
+          latestUserMessage.content,
+          [] // No triggers for now
+        );
+        console.log('Cluster logic completed:', { currentCluster, nextCluster });
+      } catch (clusterError) {
+        console.error('Cluster logic failed:', clusterError);
+        nextCluster = currentCluster;
+      }
+      
+      try {
+        // Create cluster update
+        clusterUpdate = {
+          clusterId: currentCluster,
+          updates: {
+            confidence: Math.min(100, (clusters[currentCluster]?.confidence || 0) + 10),
+            status: 'in-progress' as const,
+            lastUpdated: new Date().toISOString()
+          }
+        };
+        console.log('Cluster update created:', clusterUpdate);
+      } catch (updateError) {
+        console.error('Cluster update failed:', updateError);
+        clusterUpdate = null;
+      }
+    }
 
-    // SYSTEM PROMPT - SIMPLIFIED FOR DEBUGGING
-    console.log('Using simplified system prompt for debugging');
-    const enhancedSystemPrompt = SYSTEM_PROMPT;
+    // SYSTEM PROMPT - WITH CLUSTER LOGIC RE-ENABLED
+    console.log('Building system prompt with cluster logic...', { currentCluster });
+    let clusterPrompt: string;
+    try {
+      clusterPrompt = currentCluster && CLUSTER_PROMPTS[currentCluster as ClusterType] 
+        ? CLUSTER_PROMPTS[currentCluster as ClusterType]
+        : SYSTEM_PROMPT;
+    } catch (promptError) {
+      console.error('Failed to get cluster prompt:', promptError);
+      clusterPrompt = SYSTEM_PROMPT;
+    }
+
+    let enhancedSystemPrompt: string;
+    try {
+      enhancedSystemPrompt = `${clusterPrompt}
+
+AKTUELL SESSION:
+- Nuvarande kluster: ${currentCluster || 'Ej startat'}
+${nextCluster && nextCluster !== currentCluster ? `- Nästa kluster: ${nextCluster}` : ''}
+- Session ID: ${sessionId || 'Ej tillgängligt'}
+- Totala meddelanden: ${messages.length}
+
+${contradictions.length > 0 ? `
+UPPTÄCKTA MOTSÄGELSER:
+${contradictions.map(c => `- ${c}`).join('\n')}
+
+ADDRESSERA dessa motsägelser mjukt i din respons med frågor som "Tidigare sa du X, men nu verkar det som Y. Kan du hjälpa mig förstå?"
+` : ''}
+
+${clusterUpdate ? `
+KLUSTER UPPDATERING:
+- Kluster: ${clusterUpdate.clusterId}
+- Förtroende: ${clusterUpdate.updates.confidence}%
+- Status: ${clusterUpdate.updates.status}
+` : ''}
+
+FOKUSERA på att samla information för nuvarande kluster: ${currentCluster || 'start'}.
+Använd samma engagerande stil som tidigare - läs mellan raderna, ställ utmanande frågor och hjälp användaren att reflektera.`;
+      console.log('System prompt built successfully');
+    } catch (systemPromptError) {
+      console.error('Failed to build system prompt:', systemPromptError);
+      enhancedSystemPrompt = SYSTEM_PROMPT; // Fallback
+    }
 
     // Initialize Claude client
     const claude = getClaudeClient();
@@ -236,7 +310,7 @@ export async function POST(request: NextRequest) {
       clusterId: currentCluster,
       nextCluster: nextCluster !== currentCluster ? nextCluster : undefined,
       clusterUpdate,
-      confidenceImpact: 0
+      confidenceImpact: clusterUpdate && currentCluster ? clusterUpdate.updates.confidence - (clusters?.[currentCluster]?.confidence || 0) : 0
     });
 
   } catch (error) {
