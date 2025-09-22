@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       sessionId: z.string().optional(),
       extractedData: z.any().optional(),
       currentCluster: z.string().optional(),
-      clusters: z.record(z.any()).optional(),
+      clusters: z.record(z.string(), z.any()).optional(),
       overallConfidence: z.number().optional(),
     });
     const { 
