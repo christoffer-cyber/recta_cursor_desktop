@@ -349,7 +349,7 @@ export class ArenaLogicEngine {
   /**
    * Detects contradictions in user responses
    */
-  static detectContradictions(messages: any[], clusters: any, currentCluster: ClusterType): string[] {
+  static detectContradictions(messages: {role: string, content: string}[]): string[] {
     const contradictions: string[] = [];
     
     if (!messages || messages.length < 2) return contradictions;
@@ -369,8 +369,8 @@ export class ArenaLogicEngine {
     
     // Budget contradictions
     if (budgetPattern.test(latestMessage.content)) {
-      const previousBudgetMentions = previousMessages.filter(msg => 
-        budgetPattern.test(msg.content)
+      const previousBudgetMentions = previousMessages.filter(message => 
+        budgetPattern.test(message.content)
       );
       
       if (previousBudgetMentions.length > 0) {
@@ -378,11 +378,11 @@ export class ArenaLogicEngine {
         const latestHasHigh = /hög|stor|obegränsad|flexibel/i.test(latestMessage.content);
         const latestHasLow = /låg|begränsad|snål|tight/i.test(latestMessage.content);
         
-        const previousHasHigh = previousBudgetMentions.some(msg => 
-          /hög|stor|obegränsad|flexibel/i.test(msg.content)
+        const previousHasHigh = previousBudgetMentions.some(message => 
+          /hög|stor|obegränsad|flexibel/i.test(message.content)
         );
-        const previousHasLow = previousBudgetMentions.some(msg => 
-          /låg|begränsad|snål|tight/i.test(msg.content)
+        const previousHasLow = previousBudgetMentions.some(message => 
+          /låg|begränsad|snål|tight/i.test(message.content)
         );
         
         if ((latestHasHigh && previousHasLow) || (latestHasLow && previousHasHigh)) {
@@ -393,19 +393,19 @@ export class ArenaLogicEngine {
     
     // Urgency contradictions
     if (urgencyPattern.test(latestMessage.content)) {
-      const previousUrgencyMentions = previousMessages.filter(msg => 
-        urgencyPattern.test(msg.content)
+      const previousUrgencyMentions = previousMessages.filter(message => 
+        urgencyPattern.test(message.content)
       );
       
       if (previousUrgencyMentions.length > 0) {
         const latestIsUrgent = /brådska|akut|måste|nu|omedelbart/i.test(latestMessage.content);
         const latestIsNotUrgent = /kan vänta|inte brådska|senare|nästa år/i.test(latestMessage.content);
         
-        const previousIsUrgent = previousUrgencyMentions.some(msg => 
-          /brådska|akut|måste|nu|omedelbart/i.test(msg.content)
+        const previousIsUrgent = previousUrgencyMentions.some(message => 
+          /brådska|akut|måste|nu|omedelbart/i.test(message.content)
         );
-        const previousIsNotUrgent = previousUrgencyMentions.some(msg => 
-          /kan vänta|inte brådska|senare|nästa år/i.test(msg.content)
+        const previousIsNotUrgent = previousUrgencyMentions.some(message => 
+          /kan vänta|inte brådska|senare|nästa år/i.test(message.content)
         );
         
         if ((latestIsUrgent && previousIsNotUrgent) || (latestIsNotUrgent && previousIsUrgent)) {
@@ -416,19 +416,19 @@ export class ArenaLogicEngine {
     
     // Timeline contradictions
     if (timelinePattern.test(latestMessage.content)) {
-      const previousTimelineMentions = previousMessages.filter(msg => 
-        timelinePattern.test(msg.content)
+      const previousTimelineMentions = previousMessages.filter(message => 
+        timelinePattern.test(message.content)
       );
       
       if (previousTimelineMentions.length > 0) {
         const latestHasShort = /kort|snabb|inom 3 månader|inom 6 månader/i.test(latestMessage.content);
         const latestHasLong = /lång|18 månader|år|tid/i.test(latestMessage.content);
         
-        const previousHasShort = previousTimelineMentions.some(msg => 
-          /kort|snabb|inom 3 månader|inom 6 månader/i.test(latestMessage.content)
+        const previousHasShort = previousTimelineMentions.some(message => 
+          /kort|snabb|inom 3 månader|inom 6 månader/i.test(message.content)
         );
-        const previousHasLong = previousTimelineMentions.some(msg => 
-          /lång|18 månader|år|tid/i.test(msg.content)
+        const previousHasLong = previousTimelineMentions.some(message => 
+          /lång|18 månader|år|tid/i.test(message.content)
         );
         
         if ((latestHasShort && previousHasLong) || (latestHasLong && previousHasShort)) {

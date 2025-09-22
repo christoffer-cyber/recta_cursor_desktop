@@ -142,11 +142,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Detect contradictions in user messages
-    const contradictions = ArenaLogicEngine.detectContradictions(
-      messages,
-      clusters,
-      currentCluster as ClusterType
-    );
+    const contradictions = ArenaLogicEngine.detectContradictions(messages);
 
     // Determine next cluster based on adaptive logic
     let nextCluster = currentCluster;
@@ -203,7 +199,7 @@ export async function POST(request: NextRequest) {
     Confidence: ${clusters?.[currentCluster as ClusterType]?.confidence || 0}%
     
     ${nextCluster && nextCluster !== currentCluster ? `
-    NÄSTA STEG: Övergå till ${(nextCluster as string).toUpperCase().replace('-', ' ')} efter denna fråga.
+    NÄSTA STEG: Övergå till ${nextCluster.toUpperCase().replace('-', ' ')} efter denna fråga.
     ` : ''}
     ` : ''}
 
