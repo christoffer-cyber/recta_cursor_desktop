@@ -84,41 +84,43 @@ export async function POST(request: NextRequest) {
 
     // Get latest user message for RAG enhancement
     const latestUserMessage = messages[messages.length - 1];
-    let ragEnhancement = '';
-    let ragSources: string[] = [];
+    const ragEnhancement = '';
+    const ragSources: string[] = [];
 
-    // 🤖 Company Intelligence Agent - detect company names and trigger background processing
-    if (latestUserMessage && latestUserMessage.role === 'user') {
-      try {
-        const detectedCompany = detectCompanyName(latestUserMessage.content);
-        if (detectedCompany) {
-          console.log(`🏢 Company detected: ${detectedCompany} - triggering background intelligence gathering`);
-          
-          // Trigger background company intelligence (don't await - let it run in background)
-          try {
-            const companyAgent = new CompanyIntelligenceAgent();
-            companyAgent.gatherCompanyIntelligence(detectedCompany)
-              .then(companyData => {
-                if (companyData) {
-                  console.log(`✅ Company intelligence completed for ${detectedCompany}:`, {
-                    revenue: companyData.financial.revenue,
-                    employees: companyData.financial.employees,
-                    industry: companyData.industry
-                  });
-                  // TODO: Store this data for later use in report generation
-                }
-              })
-              .catch(error => {
-                console.error(`❌ Company intelligence failed for ${detectedCompany}:`, error);
-              });
-          } catch (agentError) {
-            console.error('❌ Failed to create CompanyIntelligenceAgent:', agentError);
-          }
-        }
-      } catch (detectionError) {
-        console.error('❌ Company name detection failed:', detectionError);
-      }
-    }
+    // 🤖 Company Intelligence Agent - TEMPORARILY DISABLED FOR DEBUGGING
+    console.log('Company Intelligence Agent temporarily disabled for debugging');
+    
+    // if (latestUserMessage && latestUserMessage.role === 'user') {
+    //   try {
+    //     const detectedCompany = detectCompanyName(latestUserMessage.content);
+    //     if (detectedCompany) {
+    //       console.log(`🏢 Company detected: ${detectedCompany} - triggering background intelligence gathering`);
+    //       
+    //       // Trigger background company intelligence (don't await - let it run in background)
+    //       try {
+    //         const companyAgent = new CompanyIntelligenceAgent();
+    //         companyAgent.gatherCompanyIntelligence(detectedCompany)
+    //           .then(companyData => {
+    //             if (companyData) {
+    //               console.log(`✅ Company intelligence completed for ${detectedCompany}:`, {
+    //                 revenue: companyData.financial.revenue,
+    //                 employees: companyData.financial.employees,
+    //                 industry: companyData.industry
+    //               });
+    //               // TODO: Store this data for later use in report generation
+    //             }
+    //           })
+    //           .catch(error => {
+    //             console.error(`❌ Company intelligence failed for ${detectedCompany}:`, error);
+    //           });
+    //       } catch (agentError) {
+    //         console.error('❌ Failed to create CompanyIntelligenceAgent:', agentError);
+    //       }
+    //     }
+    //   } catch (detectionError) {
+    //     console.error('❌ Company name detection failed:', detectionError);
+    //   }
+    // }
 
     // Debug logging
     console.log('RAG enhancement check:', {
@@ -128,40 +130,43 @@ export async function POST(request: NextRequest) {
       ragInitialized: isRagSystemInitialized()
     });
 
-    // Optimize RAG: Only try if already initialized, don't wait for initialization
-    if (latestUserMessage && latestUserMessage.role === 'user' && isRagSystemInitialized()) {
-      try {
-        const rag = getGlobalRagSystem();
-        if (rag) {
-          // Set timeout for RAG query to avoid blocking
-          const ragPromise = rag.query({
-            question: latestUserMessage.content,
-            context: {
-              industry: extractedData?.industry,
-              role: extractedData?.roleTitle,
-              companySize: extractedData?.companySize,
-              stage: extractedData?.stage
-            }
-          });
+    // RAG SYSTEM - TEMPORARILY DISABLED FOR DEBUGGING
+    console.log('RAG system temporarily disabled for debugging');
+    
+    // // Optimize RAG: Only try if already initialized, don't wait for initialization
+    // if (latestUserMessage && latestUserMessage.role === 'user' && isRagSystemInitialized()) {
+    //   try {
+    //     const rag = getGlobalRagSystem();
+    //     if (rag) {
+    //       // Set timeout for RAG query to avoid blocking
+    //       const ragPromise = rag.query({
+    //         question: latestUserMessage.content,
+    //         context: {
+    //           industry: extractedData?.industry,
+    //           role: extractedData?.roleTitle,
+    //           companySize: extractedData?.companySize,
+    //           stage: extractedData?.stage
+    //         }
+    //       });
 
-          // Race between RAG response and timeout
-          const ragResponse = await Promise.race([
-            ragPromise,
-            new Promise<never>((_, reject) => 
-              setTimeout(() => reject(new Error('RAG timeout')), 3000)
-            )
-          ]);
+    //       // Race between RAG response and timeout
+    //       const ragResponse = await Promise.race([
+    //         ragPromise,
+    //         new Promise<never>((_, reject) => 
+    //           setTimeout(() => reject(new Error('RAG timeout')), 3000)
+    //         )
+    //       ]);
 
-          if (ragResponse.confidence > 0.3) {
-            ragEnhancement = ragResponse.answer;
-            ragSources = ragResponse.sources.map(s => s.metadata.source);
-            console.log('RAG enhancement applied with confidence:', ragResponse.confidence);
-          }
-        }
-      } catch (ragError) {
-        console.log('RAG enhancement skipped (timeout/error):', ragError instanceof Error ? ragError.message : 'Unknown error');
-      }
-    }
+    //       if (ragResponse.confidence > 0.3) {
+    //         ragEnhancement = ragResponse.answer;
+    //         ragSources = ragResponse.sources.map(s => s.metadata.source);
+    //         console.log('RAG enhancement applied with confidence:', ragResponse.confidence);
+    //       }
+    //     }
+    //   } catch (ragError) {
+    //     console.log('RAG enhancement skipped (timeout/error):', ragError instanceof Error ? ragError.message : 'Unknown error');
+    //   }
+    // }
 
     // Detect contradictions in user messages
     console.log('Starting contradiction detection...');
