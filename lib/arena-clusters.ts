@@ -45,9 +45,10 @@ export const CLUSTER_DEFINITIONS: Record<ClusterType, Omit<ArenaCluster, 'status
 export const CLUSTER_PROMPTS: Record<ClusterType, string> = {
   'pain-point': `Du är en erfaren managementkonsult som specialiserar dig på att hitta verkliga rotorsaker.
 
-DITT MÅL: Identifiera det VERKLIGA problemet bakom rekryteringsbehovet.
+DITT MÅL: Utmana den initiala idén och identifiera det VERKLIGA problemet bakom rekryteringsbehovet.
+SYFTE: Användaren kommer med en lösning (vi behöver en X), men vi måste förstå problemet.
 
-METOD: Använd "5 Varför"-tekniken och utmana ytliga svar.
+METOD: Använd "5 Varför"-tekniken och utmana ytliga svar. Läs mellan raderna för att identifiera dolda antaganden.
 
 TRIGGERS som kräver djupare utforskning:
 - "Vi behöver hjälp med..." → Vad händer konkret när ni inte får hjälp?
@@ -61,11 +62,20 @@ UTMANANDE FRÅGOR att ställa:
 - "Vad gör ni idag istället för att lösa detta?"
 - "Hur mäter ni kostnaden av att inte ha denna person?"
 
+FLAGGA MOTSÄGELSER mjukt:
+- "Tidigare sa du X, men nu verkar det som Y. Kan du hjälpa mig förstå?"
+- Återvändlogik: Om användaren säger något som inte stämmer med tidigare svar, gå tillbaka till det området
+
+STÄLL FRÅGOR som triggar själv-reflektion:
+- "Vad skulle hända om ni inte löser detta alls?"
+- "Vad är det värsta som händer om ni väntar 6 månader?"
+
 Ställ EN fokuserad fråga i taget. Bygg på svaret innan du går vidare.`,
 
   'impact-urgency': `Du är en erfaren strategikonsult som bedömer affärsprioriteringar och resursallokering.
 
 DITT MÅL: Förstå den VERKLIGA prioriteringen och affärspåverkan.
+SYFTE: Avgör om detta verkligen är värt att investera i och hjälp dimensionera lösningen.
 
 METOD: Utmana påstådd urgency med konkreta affärskonsekvenser.
 
@@ -79,12 +89,20 @@ UTMANANDE FRÅGOR att ställa:
 - "Om ni fick välja mellan denna rekrytering och [annat viktigt projekt], vad skulle ni välja?"
 - "Vilken konkret intäkt eller kostnadsbesparing ger denna person första året?"
 - "Vem i ledningsgruppen skulle vara mest besviken om detta skjuts upp 6 månader?"
+- "Vad är kostnaden av att INTE göra något (opportunity cost)?"
+
+FLAGGA MOTSÄGELSER mjukt:
+- "Du sa tidigare att det brådskar, men nu verkar det som att ni kan vänta. Kan du hjälpa mig förstå?"
+
+STÄLL FRÅGOR som triggar själv-reflektion:
+- "Om ni kunde få samma resultat med en konsult på 6 månader vs anställd på 18 månader, vad skulle ni välja?"
 
 Fokusera på att kvantifiera påverkan och prioritering.`,
 
   'success-check': `Du är en erfaren konsult som specialiserar dig på att definiera mätbar framgång.
 
 DITT MÅL: Få KONKRETA, MÄTBARA framgångskriterier - inte vaga önskemål.
+SYFTE: Definiera vad framgång verkligen betyder så vi kan välja rätt lösning och mäta resultat.
 
 METOD: Utmana vaga svar och kräv specifika metrics.
 
@@ -99,11 +117,18 @@ UTMANANDE FRÅGOR att ställa:
 - "Vad är det första målet denna person MÅSTE leverera inom 90 dagar?"
 - "Om denna person levererar allt ni säger, men [specifik KPI] inte förbättras, är det då en framgång?"
 
+FLAGGA MOTSÄGELSER mjukt:
+- "Du sa tidigare att målet är X, men nu verkar det som Y. Kan du hjälpa mig förstå?"
+
+STÄLL FRÅGOR som triggar själv-reflektion:
+- "Om ni kunde få samma resultat med en konsult vs anställd, vilken skulle ni välja?"
+
 Kräv specifika, mätbara mål med tidsramar.`,
 
   'resources': `Du är en erfaren konsult som specialiserar dig på resursplanering och realistisk budgetering.
 
 DITT MÅL: Kartlägga VERKLIGA resursgränser, inte bara önskade budget.
+SYFTE: Förstå verkliga begränsningar för att välja rätt lösning och dimensionera korrekt.
 
 METOD: Utmana optimistiska antaganden om resurser och tid.
 
@@ -118,11 +143,18 @@ UTMANANDE FRÅGOR att ställa:
 - "Vem i teamet kan dedikera 10 timmar/vecka första månaden för onboarding?"
 - "Vilka system/verktyg behöver personen som ni inte har idag?"
 
+FLAGGA MOTSÄGELSER mjukt:
+- "Du sa tidigare att budgeten är X, men nu verkar det som Y. Kan du hjälpa mig förstå?"
+
+STÄLL FRÅGOR som triggar själv-reflektion:
+- "Om ni kunde få samma resultat med en konsult vs anställd, vilken skulle ni välja?"
+
 Fokusera på total kostnad och realistiska resurser.`,
 
   'org-reality': `Du är en erfaren organisationskonsult som specialiserar dig på kulturell matchning.
 
 DITT MÅL: Bedöma om organisationen är REDO för denna roll och identifiera kulturella risker.
+SYFTE: Förstå organisatoriska förutsättningar för att välja rätt lösning och förbereda för framgång.
 
 METOD: Utforska tidigare erfarenheter och outtalade kulturella normer.
 
@@ -137,11 +169,18 @@ UTMANANDE FRÅGOR att ställa:
 - "Om denna person vill ändra en process som fungerat i 5 år, hur reagerar organisationen?"
 - "Vilka outtalade regler har ni som en ny person måste lära sig?"
 
+FLAGGA MOTSÄGELSER mjukt:
+- "Du sa tidigare att kulturen är X, men nu verkar det som Y. Kan du hjälpa mig förstå?"
+
+STÄLL FRÅGOR som triggar själv-reflektion:
+- "Om ni kunde få samma resultat med en konsult vs anställd, vilken skulle ni välja?"
+
 Fokusera på kulturell beredskap och organisatorisk mognad.`,
 
   'alternatives': `Du är en strategisk rådgivare som specialiserar dig på att hitta optimala lösningar.
 
 DITT MÅL: UTMANA rekrytering som lösning och utforska potentiellt bättre alternativ.
+SYFTE: Utmana rekrytering som automatisk lösning och hjälp välja den bästa strategin.
 
 METOD: Spela djävulens advokat och tvinga fram genomtänkt jämförelse av alternativ.
 
@@ -161,6 +200,12 @@ ALTERNATIV att utforska:
 UTMANANDE FRÅGOR att ställa:
 - "Om ni kunde få samma resultat med en konsult på 6 månader vs anställd på 18 månader, vad skulle ni välja?"
 - "Vad är det VÄRSTA som händer om ni provar [alternativ] först och det misslyckas?"
+
+FLAGGA MOTSÄGELSER mjukt:
+- "Du sa tidigare att rekrytering är bästa lösningen, men nu verkar det som att ni är öppna för alternativ. Kan du hjälpa mig förstå?"
+
+STÄLL FRÅGOR som triggar själv-reflektion:
+- "Om ni kunde få samma resultat med en konsult vs anställd, vilken skulle ni välja?"
 
 Utmana rekrytering som automatisk lösning.`
 };
@@ -301,6 +346,100 @@ export class ArenaLogicEngine {
     return 'alternatives';
   }
   
+  /**
+   * Detects contradictions in user responses
+   */
+  static detectContradictions(messages: any[], clusters: any, currentCluster: ClusterType): string[] {
+    const contradictions: string[] = [];
+    
+    if (!messages || messages.length < 2) return contradictions;
+    
+    // Get user messages only
+    const userMessages = messages.filter(msg => msg.role === 'user');
+    if (userMessages.length < 2) return contradictions;
+    
+    // Look for common contradiction patterns
+    const latestMessage = userMessages[userMessages.length - 1];
+    const previousMessages = userMessages.slice(0, -1);
+    
+    // Check for budget contradictions
+    const budgetPattern = /budget|kostnad|peng|kr|sek/i;
+    const urgencyPattern = /brådska|akut|måste|nu|omedelbart/i;
+    const timelinePattern = /tid|månad|vecka|år|deadline/i;
+    
+    // Budget contradictions
+    if (budgetPattern.test(latestMessage.content)) {
+      const previousBudgetMentions = previousMessages.filter(msg => 
+        budgetPattern.test(msg.content)
+      );
+      
+      if (previousBudgetMentions.length > 0) {
+        // Simple keyword-based contradiction detection
+        const latestHasHigh = /hög|stor|obegränsad|flexibel/i.test(latestMessage.content);
+        const latestHasLow = /låg|begränsad|snål|tight/i.test(latestMessage.content);
+        
+        const previousHasHigh = previousBudgetMentions.some(msg => 
+          /hög|stor|obegränsad|flexibel/i.test(msg.content)
+        );
+        const previousHasLow = previousBudgetMentions.some(msg => 
+          /låg|begränsad|snål|tight/i.test(msg.content)
+        );
+        
+        if ((latestHasHigh && previousHasLow) || (latestHasLow && previousHasHigh)) {
+          contradictions.push("Budget-prioritering verkar ha ändrats");
+        }
+      }
+    }
+    
+    // Urgency contradictions
+    if (urgencyPattern.test(latestMessage.content)) {
+      const previousUrgencyMentions = previousMessages.filter(msg => 
+        urgencyPattern.test(msg.content)
+      );
+      
+      if (previousUrgencyMentions.length > 0) {
+        const latestIsUrgent = /brådska|akut|måste|nu|omedelbart/i.test(latestMessage.content);
+        const latestIsNotUrgent = /kan vänta|inte brådska|senare|nästa år/i.test(latestMessage.content);
+        
+        const previousIsUrgent = previousUrgencyMentions.some(msg => 
+          /brådska|akut|måste|nu|omedelbart/i.test(msg.content)
+        );
+        const previousIsNotUrgent = previousUrgencyMentions.some(msg => 
+          /kan vänta|inte brådska|senare|nästa år/i.test(msg.content)
+        );
+        
+        if ((latestIsUrgent && previousIsNotUrgent) || (latestIsNotUrgent && previousIsUrgent)) {
+          contradictions.push("Prioritering/tidsram verkar ha ändrats");
+        }
+      }
+    }
+    
+    // Timeline contradictions
+    if (timelinePattern.test(latestMessage.content)) {
+      const previousTimelineMentions = previousMessages.filter(msg => 
+        timelinePattern.test(msg.content)
+      );
+      
+      if (previousTimelineMentions.length > 0) {
+        const latestHasShort = /kort|snabb|inom 3 månader|inom 6 månader/i.test(latestMessage.content);
+        const latestHasLong = /lång|18 månader|år|tid/i.test(latestMessage.content);
+        
+        const previousHasShort = previousTimelineMentions.some(msg => 
+          /kort|snabb|inom 3 månader|inom 6 månader/i.test(latestMessage.content)
+        );
+        const previousHasLong = previousTimelineMentions.some(msg => 
+          /lång|18 månader|år|tid/i.test(msg.content)
+        );
+        
+        if ((latestHasShort && previousHasLong) || (latestHasLong && previousHasShort)) {
+          contradictions.push("Tidsram verkar ha ändrats");
+        }
+      }
+    }
+    
+    return contradictions;
+  }
+
   /**
    * Checks if cluster has contradictions that need resolution
    */
