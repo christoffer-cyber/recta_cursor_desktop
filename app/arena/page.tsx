@@ -1,14 +1,14 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 import ProgressIndicator from "../components/ProgressIndicator";
-import ClusterProgressIndicator from "../components/ClusterProgressIndicator";
+// ClusterProgressIndicator removed
 import ClusterTopbar from "../components/ClusterTopbar";
 import DataPreview from "../components/DataPreview";
 // LiveInsightsPanel removed
 // ChapterProgress removed
 import { CompanyIntelligenceAgent, CompanyData } from "../../lib/company-intelligence";
 import { ArenaLogicEngine, CLUSTER_DEFINITIONS } from "../../lib/arena-clusters";
-import { ClusterType, ArenaCluster, Message, ArenaSession } from "../../lib/types";
+import { ClusterType, ArenaCluster, Message } from "../../lib/types";
 
 type FlowStep = 'setup' | 'conversation' | 'extracting' | 'preview' | 'generating' | 'complete';
 
@@ -588,14 +588,7 @@ export default function Arena() {
             </div>
           )}
 
-          {/* Chapter Progress in Chat Section */}
-          {currentStep !== 'setup' && (
-            <ChapterProgress
-              currentChapter={currentChapter}
-              completedChapters={completedChapters}
-              totalChapters={6}
-            />
-          )}
+          {/* Chapter Progress in Chat Section removed */}
         </div>
 
         {/* RIGHT: Canvas Section (70%) */}
