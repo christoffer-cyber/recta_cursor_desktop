@@ -207,6 +207,108 @@ export const IMPACT_URGENCY_REQUIREMENTS: ClusterRequirements = {
   ]
 };
 
+// CLUSTER 3: SUCCESS CHECK - Universal för alla roller och branscher
+export const SUCCESS_CHECK_REQUIREMENTS: ClusterRequirements = {
+  name: "Success Reality Check",
+  description: "Definiera konkreta, mätbara framgångskriterier",
+  minimumPoints: 3, // Minst 3 av 4 punkter
+  progressThreshold: 75, // 75% confidence för att gå vidare
+  requiredPoints: [
+    {
+      key: "measurable_goals",
+      description: "Mätbara mål - konkreta siffror, procent eller andra mätbara resultat",
+      weight: 4,
+      keywords: [
+        "procent", "%", "siffror", "antal", "gånger", "dagar", "veckor", "månader",
+        "öka", "minska", "förbättra", "reducera", "maximera", "minimera",
+        "från", "till", "från X till Y", "under", "över", "mer än", "mindre än",
+        "miljoner", "tusen", "kr", "kronor", "SEK", "MSEK", "kunder", "intäkter",
+        "buggar", "fel", "förseningar", "kostnader", "tid", "effektivitet"
+      ],
+      patterns: [
+        /\d+.*procent|\d+%/i,
+        /från.*\d+.*till.*\d+/i,
+        /minska.*från.*\d+.*till.*\d+/i,
+        /öka.*från.*\d+.*till.*\d+/i,
+        /under.*\d+|över.*\d+/i,
+        /mindre.*än.*\d+|mer.*än.*\d+/i,
+        /\d+.*dagar|veckor|månader/i,
+        /\d+.*miljoner|tusen|kr|kronor/i,
+        /buggar.*från.*\d+.*till.*\d+/i,
+        /kostnader.*minska.*\d+/i
+      ]
+    },
+    {
+      key: "timeframe",
+      description: "Tidsram - inom hur lång tid ska framgång synas? (30/90/365 dagar)",
+      weight: 4,
+      keywords: [
+        "dagar", "veckor", "månader", "år", "kvartal", "Q1", "Q2", "Q3", "Q4",
+        "inom", "senast", "före", "efter", "deadline", "frist", "målsättning",
+        "30", "60", "90", "180", "365", "6 månader", "12 månader", "ett år",
+        "tidsram", "tidsperiod", "deadline", "målår", "budgetår"
+      ],
+      patterns: [
+        /inom.*\d+.*dagar|veckor|månader/i,
+        /senast.*\d+.*dagar|veckor|månader/i,
+        /före.*Q[1-4]|kvartal/i,
+        /deadline.*\d+.*dagar|veckor|månader/i,
+        /\d+.*dagar|veckor|månader.*senare/i,
+        /tidsram.*\d+.*dagar|veckor|månader/i,
+        /målsättning.*\d+.*dagar|veckor|månader/i,
+        /6.*månader|12.*månader|ett.*år/i,
+        /30.*dagar|60.*dagar|90.*dagar|180.*dagar|365.*dagar/i
+      ]
+    },
+    {
+      key: "success_definition",
+      description: "Definition av framgång vs misslyckande - vad räknas som bra nog vs inte bra nog?",
+      weight: 4,
+      keywords: [
+        "framgång", "lyckas", "misslyckas", "bra nog", "inte bra nog", "acceptabelt",
+        "oacceptabelt", "kvalitet", "standard", "krav", "kriterier", "benchmark",
+        "jämförelse", "baslinje", "nuläge", "mål", "vision", "förväntningar",
+        "räknas som", "definieras som", "betyder", "innebär", "tolkas som"
+      ],
+      patterns: [
+        /framgång.*betyder|innebär|är/i,
+        /lyckas.*när|om/i,
+        /misslyckas.*när|om/i,
+        /bra nog.*är|betyder/i,
+        /inte bra nog.*är|betyder/i,
+        /acceptabelt.*när|om/i,
+        /oacceptabelt.*när|om/i,
+        /kvalitet.*krav|standard/i,
+        /benchmark.*är|betyder/i,
+        /räknas som.*framgång|lyckat/i
+      ]
+    },
+    {
+      key: "accountability",
+      description: "Ansvarig för måluppfyllelse - vem ska leverera resultatet och rapportera framsteg?",
+      weight: 3,
+      keywords: [
+        "ansvarig", "ansvar", "leverera", "rapportera", "rapportering", "framsteg",
+        "chef", "ledare", "manager", "team", "avdelning", "roll", "person",
+        "jag", "vi", "han", "hon", "CFO", "VD", "direktör", "projektledare",
+        "varje", "vecka", "månad", "dag", "måndag", "fredag", "möte", "status"
+      ],
+      patterns: [
+        /ansvarig.*för.*leverera|rapportera/i,
+        /rapporterar.*till.*mig|chef|ledning/i,
+        /leverera.*resultat.*till/i,
+        /ansvar.*för.*måluppfyllelse/i,
+        /rapportering.*varje.*vecka|månad/i,
+        /framsteg.*rapporteras.*till/i,
+        /CFO|VD|direktör.*rapporterar/i,
+        /team.*ansvarar.*för/i,
+        /jag.*rapporterar.*till/i,
+        /status.*varje.*måndag|fredag/i
+      ]
+    }
+  ]
+};
+
 // Analysis Result Type
 export type InformationAnalysis = {
   clusterId: string;
@@ -281,6 +383,36 @@ export class InformationAnalyzer {
       missingPoints,
       canProgress,
       nextQuestion: canProgress ? undefined : this.generateFollowUpQuestion(missingPoints[0], 'impact-urgency')
+    };
+  }
+
+  static analyzeSuccessCheck(userMessage: string): InformationAnalysis {
+    const requirements = SUCCESS_CHECK_REQUIREMENTS;
+    const foundPoints = requirements.requiredPoints.map(point => {
+      const found = this.checkForInformationPoint(userMessage, point);
+      return {
+        key: point.key,
+        found: found.found,
+        confidence: found.confidence,
+        extractedText: found.extractedText
+      };
+    });
+
+    const foundCount = foundPoints.filter(p => p.found).length;
+    const totalScore = Math.round((foundCount / requirements.requiredPoints.length) * 100);
+    const canProgress = foundCount >= requirements.minimumPoints && totalScore >= requirements.progressThreshold;
+    
+    const missingPoints = foundPoints
+      .filter(p => !p.found)
+      .map(p => requirements.requiredPoints.find(rp => rp.key === p.key)?.description || p.key);
+
+    return {
+      clusterId: 'success-check',
+      foundPoints,
+      totalScore,
+      missingPoints,
+      canProgress,
+      nextQuestion: canProgress ? undefined : this.generateFollowUpQuestion(missingPoints[0], 'success-check')
     };
   }
 
@@ -366,6 +498,28 @@ export class InformationAnalyzer {
           "Hur viktigt är detta jämfört med andra projekt eller initiativ?",
           "Är detta en av era högsta prioriteringar just nu?",
           "Konkurrerar detta med andra saker ni arbetar med?"
+        ]
+      },
+      'success-check': {
+        "Mätbara mål - konkreta siffror, procent eller andra mätbara resultat": [
+          "Kan du ge konkreta siffror eller procent på vad framgång skulle innebära?",
+          "Vilka mätbara resultat vill ni uppnå?",
+          "Hur skulle ni mäta om detta är lyckat eller inte?"
+        ],
+        "Tidsram - inom hur lång tid ska framgång synas? (30/90/365 dagar)": [
+          "Inom hur lång tid vill ni se resultat?",
+          "Vilken tidsram har ni för att uppnå dessa mål?",
+          "När ska framgången vara synlig - 30, 90 eller 365 dagar?"
+        ],
+        "Definition av framgång vs misslyckande - vad räknas som bra nog vs inte bra nog?": [
+          "Vad räknas som framgång för er?",
+          "Vad skulle vara acceptabelt vs oacceptabelt?",
+          "Hur definierar ni att något är bra nog?"
+        ],
+        "Ansvarig för måluppfyllelse - vem ska leverera resultatet och rapportera framsteg?": [
+          "Vem är ansvarig för att leverera dessa resultat?",
+          "Vem ska rapportera framsteg och till vem?",
+          "Vilken roll eller person har ansvaret för måluppfyllelse?"
         ]
       }
     };

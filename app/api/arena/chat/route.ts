@@ -30,6 +30,12 @@ STEG 2 - IMPACT & URGENCY: Leta efter dessa 4 punkter i användarens svar:
 3. Pressgrupper (vem bryr sig om att detta löses? chef, kunder, styrelse, team)
 4. Prioritering (hur viktigt är detta jämfört med andra saker företaget gör?)
 
+STEG 3 - SUCCESS CHECK: Leta efter dessa 4 punkter i användarens svar:
+1. Mätbara mål (konkreta siffror, procent eller andra mätbara resultat)
+2. Tidsram (inom hur lång tid ska framgång synas? 30/90/365 dagar)
+3. Definition av framgång vs misslyckande (vad räknas som bra nog vs inte bra nog?)
+4. Ansvarig för måluppfyllelse (vem ska leverera resultatet och rapportera framsteg?)
+
 Systemet går vidare till nästa steg först när minst 3 av 4 punkter är identifierade.
 
 Din mission:
@@ -120,6 +126,24 @@ export async function POST(request: NextRequest) {
           analysis = InformationAnalyzer.analyzeImpactUrgency(latestUserMessage.content);
           
           console.log('Impact & Urgency Analysis:', {
+            foundPoints: analysis.foundPoints.filter(p => p.found).map(p => p.key),
+            totalScore: analysis.totalScore,
+            canProgress: analysis.canProgress,
+            missingPoints: analysis.missingPoints
+          });
+          
+          // Set confidence based on information quality, not message length
+          newConfidence = analysis.totalScore;
+          
+          // Store next question for better follow-up
+          if (analysis.nextQuestion) {
+            console.log('Suggested next question:', analysis.nextQuestion);
+          }
+        } else if (currentCluster === 'success-check') {
+          // Use intelligent analysis for Success Check cluster
+          analysis = InformationAnalyzer.analyzeSuccessCheck(latestUserMessage.content);
+          
+          console.log('Success Check Analysis:', {
             foundPoints: analysis.foundPoints.filter(p => p.found).map(p => p.key),
             totalScore: analysis.totalScore,
             canProgress: analysis.canProgress,
