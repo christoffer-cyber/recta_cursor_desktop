@@ -71,13 +71,13 @@ jobs:
 
       - name: Deploy with Vercel (preview)
         id: vercel
-        uses: vercel/action@v1
+        uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: .
-          prod: false
+          working-directory: ./
+          vercel-args: '--prod false'
         env:
           # Runtime secrets used by Next.js build/server
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -99,7 +99,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const url = core.getInput('url') || `${{ steps.vercel.outputs.preview-url }}`;
+            const url = `${{ steps.vercel.outputs.preview-url }}`;
             const sha = process.env.GITHUB_SHA;
             await github.repos.createCommitComment({
               owner: context.repo.owner,
