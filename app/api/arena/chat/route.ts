@@ -157,9 +157,16 @@ export async function POST(request: NextRequest) {
     //   }
     // }
 
-    // CONTRADICTION DETECTION - TEMPORARILY DISABLED FOR DEBUGGING
-    console.log('Contradiction detection temporarily disabled for debugging');
-    const contradictions: string[] = [];
+    // CONTRADICTION DETECTION - RE-ENABLED FOR TESTING
+    console.log('Starting contradiction detection...');
+    let contradictions: string[] = [];
+    try {
+      contradictions = ArenaLogicEngine.detectContradictions(messages);
+      console.log('Contradiction detection completed:', contradictions);
+    } catch (contradictionError) {
+      console.error('Contradiction detection failed:', contradictionError);
+      contradictions = [];
+    }
     
     // CLUSTER LOGIC - RE-ENABLED FOR TESTING
     console.log('Starting cluster logic...', { currentCluster, hasClusters: !!clusters, hasLatestMessage: !!latestUserMessage });
