@@ -526,6 +526,113 @@ export const ORGANIZATIONAL_REALITY_REQUIREMENTS: ClusterRequirements = {
   ]
 };
 
+// CLUSTER 6: ALTERNATIVES - Final cluster for comprehensive analysis
+export const ALTERNATIVES_REQUIREMENTS: ClusterRequirements = {
+  name: "Alternatives",
+  description: "Utmana rekrytering som bästa lösning genom alternativanalys",
+  minimumPoints: 3, // Minst 3 av 4 punkter
+  progressThreshold: 75, // 75% confidence för att avsluta analysen
+  requiredPoints: [
+    {
+      key: "alternatives_evaluated",
+      description: "Alternativ utvärderade - har användaren övervägt andra lösningar än rekrytering?",
+      weight: 4,
+      keywords: [
+        "konsult", "konsulter", "konsulting", "freelancer", "frilansare",
+        "automation", "automatisering", "automatisk", "system", "verktyg",
+        "outsourcing", "utveckling", "externa", "partner", "leverantör",
+        "omorganisation", "omstrukturering", "omställning", "förändring",
+        "övervägt", "tittat på", "jämfört", "alternativ", "andra lösningar",
+        "istället för", "utöver", "utom", "förutom", "förbi"
+      ],
+      patterns: [
+        /konsult|konsulter.*övervägt|tittat på/i,
+        /automation|automatisering.*som.*alternativ/i,
+        /outsourcing.*vs.*anställning/i,
+        /omorganisation.*istället för/i,
+        /andra lösningar.*än.*rekrytering/i,
+        /alternativ.*som.*konsult/i,
+        /jämfört.*med.*externa/i,
+        /övervägt.*automation/i,
+        /tittat på.*frilansare/i,
+        /andra möjligheter.*än/i
+      ]
+    },
+    {
+      key: "comparison_made",
+      description: "Jämförelse gjord - hur väger alternativen mot varandra i kostnad/tid/kvalitet?",
+      weight: 4,
+      keywords: [
+        "kostnad", "tid", "kvalitet", "jämfört", "väger", "fördelar", "nackdelar",
+        "dyrare", "billigare", "snabbare", "långsammare", "bättre", "sämre",
+        "analys", "utvärdering", "bedömning", "pros", "cons", "plus", "minus",
+        "kronor", "kr", "SEK", "dagar", "veckor", "månader", "år",
+        "effektivitet", "produktivitet", "resultat", "prestation"
+      ],
+      patterns: [
+        /kostnad.*jämfört.*med.*konsult|automation/i,
+        /tid.*snabbare.*än.*anställning/i,
+        /kvalitet.*bättre.*med.*externa/i,
+        /analys.*fördelar.*nackdelar/i,
+        /\d+.*kr.*dyrare.*billigare/i,
+        /dagar.*veckor.*snabbare/i,
+        /effektivitet.*produktivitet.*jämfört/i,
+        /resultat.*prestation.*analys/i,
+        /pros.*cons.*alternativ/i,
+        /plus.*minus.*jämförelse/i
+      ]
+    },
+    {
+      key: "recruitment_arguments",
+      description: "Argument för rekrytering - varför är anställning bättre än alternativen?",
+      weight: 4,
+      keywords: [
+        "anställning", "rekrytering", "fast", "permanent", "intern", "egen",
+        "bättre", "fördelar", "därför", "eftersom", "för att", "trots",
+        "kontinuitet", "långsikt", "kultur", "team", "passform", "lojalitet",
+        "kompetens", "kunskap", "erfarenhet", "specialist", "expertis",
+        "kontroll", "styrning", "ansvar", "engagemang", "investering"
+      ],
+      patterns: [
+        /anställning.*bättre.*än.*konsult/i,
+        /rekrytering.*fördelar.*kontinuitet/i,
+        /fast.*anställning.*kultur.*team/i,
+        /därför.*anställa.*istället/i,
+        /eftersom.*intern.*kompetens/i,
+        /för att.*långsikt.*investering/i,
+        /trots.*dyrare.*bättre/i,
+        /kontroll.*styrning.*egen/i,
+        /passform.*loyalitet.*permanent/i,
+        /specialist.*expertis.*intern/i
+      ]
+    },
+    {
+      key: "risk_awareness",
+      description: "Riskmedvetenhet - förstår användaren riskerna med att rekrytera vs andra lösningar?",
+      weight: 4,
+      keywords: [
+        "risk", "risker", "problematiskt", "svårt", "utmaningar", "ovisshet",
+        "fel", "misslyckande", "konsekvenser", "vad händer om", "om det inte",
+        "backup", "alternativ", "plan b", "reservplan", "omväg",
+        "fel person", "inte passar", "slutar", "säger upp sig",
+        "kostnad", "förlust", "tidsförlust", "produktivitetsförlust"
+      ],
+      patterns: [
+        /risk.*rekrytering.*fel person/i,
+        /vad händer.*om.*inte.*passar/i,
+        /konsekvenser.*om.*misslyckande/i,
+        /backup.*plan.*b.*alternativ/i,
+        /omväg.*om.*inte.*fungerar/i,
+        /kostnad.*förlust.*fel/i,
+        /tidsförlust.*produktivitetsförlust/i,
+        /ovisshet.*utmaningar.*rekrytering/i,
+        /problematiskt.*svårt.*anställning/i,
+        /reservplan.*om.*går fel/i
+      ]
+    }
+  ]
+};
+
 // Analysis Result Type
 export type InformationAnalysis = {
   clusterId: string;
@@ -693,6 +800,36 @@ export class InformationAnalyzer {
     };
   }
 
+  static analyzeAlternatives(userMessage: string): InformationAnalysis {
+    const requirements = ALTERNATIVES_REQUIREMENTS;
+    const foundPoints = requirements.requiredPoints.map(point => {
+      const found = this.checkForInformationPoint(userMessage, point);
+      return {
+        key: point.key,
+        found: found.found,
+        confidence: found.confidence,
+        extractedText: found.extractedText
+      };
+    });
+
+    const foundCount = foundPoints.filter(p => p.found).length;
+    const totalScore = Math.round((foundCount / requirements.requiredPoints.length) * 100);
+    const canProgress = foundCount >= requirements.minimumPoints && totalScore >= requirements.progressThreshold;
+    
+    const missingPoints = foundPoints
+      .filter(p => !p.found)
+      .map(p => requirements.requiredPoints.find(rp => rp.key === p.key)?.description || p.key);
+
+    return {
+      clusterId: 'alternatives',
+      foundPoints,
+      totalScore,
+      missingPoints,
+      canProgress,
+      nextQuestion: canProgress ? undefined : this.generateFollowUpQuestion(missingPoints[0] || '', 'alternatives')
+    };
+  }
+
   private static checkForInformationPoint(
     message: string, 
     point: InformationPoint
@@ -841,6 +978,28 @@ export class InformationAnalyzer {
           "Är er organisation redo för denna typ av roll?",
           "Har ni tidigare erfarenhet av liknande ansvar?",
           "Vad behöver ni för att kunna hantera denna roll effektivt?"
+        ]
+      },
+      'alternatives': {
+        "Alternativ utvärderade - har användaren övervägt andra lösningar än rekrytering?": [
+          "Har ni övervägt andra lösningar än rekrytering?",
+          "Vilka alternativ har ni tittat på - konsulter, automation, outsourcing?",
+          "Har ni jämfört olika lösningar för att lösa detta problem?"
+        ],
+        "Jämförelse gjord - hur väger alternativen mot varandra i kostnad/tid/kvalitet?": [
+          "Hur jämför ni alternativen i kostnad, tid och kvalitet?",
+          "Vad är fördelarna och nackdelarna med varje alternativ?",
+          "Vilken analys har ni gjort av olika lösningar?"
+        ],
+        "Argument för rekrytering - varför är anställning bättre än alternativen?": [
+          "Varför är rekrytering bättre än alternativen?",
+          "Vilka fördelar ser ni med fast anställning?",
+          "Vad är argumenten för att anställa istället för andra lösningar?"
+        ],
+        "Riskmedvetenhet - förstår användaren riskerna med att rekrytera vs andra lösningar?": [
+          "Vilka risker ser ni med att rekrytera?",
+          "Vad händer om rekryteringen inte fungerar som planerat?",
+          "Har ni tänkt på vad som kan gå fel och hur ni hanterar det?"
         ]
       }
     };

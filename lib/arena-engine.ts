@@ -79,6 +79,9 @@ export class ArenaEngine {
         case 'org-reality':
           analysis = InformationAnalyzer.analyzeOrganizationalReality(latestUserMessage.content);
           break;
+        case 'alternatives':
+          analysis = InformationAnalyzer.analyzeAlternatives(latestUserMessage.content);
+          break;
         default:
           // Fallback for other clusters (will be updated later)
           const messageLength = latestUserMessage.content.length;
