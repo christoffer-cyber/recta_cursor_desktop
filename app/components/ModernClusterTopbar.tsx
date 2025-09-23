@@ -203,48 +203,111 @@ export default function ModernClusterTopbar({
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: DesignSystem.spacing[2],
-        padding: `${DesignSystem.spacing[2]} ${DesignSystem.spacing[3]}`,
-        background: DesignSystem.colors.background.primary,
-        borderRadius: DesignSystem.borderRadius.md,
-        border: `1px solid ${DesignSystem.colors.neutral[200]}`,
-        minWidth: '120px',
+        gap: DesignSystem.spacing[4],
       }}>
-        <span style={{
-          fontSize: DesignSystem.typography.fontSize.sm,
-          fontWeight: DesignSystem.typography.fontWeight.semibold,
-          color: DesignSystem.colors.primary[900],
-        }}>
-          Framsteg
-        </span>
-        
+        {/* Overall Progress */}
         <div style={{
-          width: '60px',
-          height: '6px',
-          background: DesignSystem.colors.neutral[200],
-          borderRadius: DesignSystem.borderRadius.sm,
-          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          gap: DesignSystem.spacing[2],
+          padding: `${DesignSystem.spacing[2]} ${DesignSystem.spacing[3]}`,
+          background: DesignSystem.colors.background.primary,
+          borderRadius: DesignSystem.borderRadius.md,
+          border: `1px solid ${DesignSystem.colors.neutral[200]}`,
+          minWidth: '120px',
         }}>
+          <span style={{
+            fontSize: DesignSystem.typography.fontSize.sm,
+            fontWeight: DesignSystem.typography.fontWeight.semibold,
+            color: DesignSystem.colors.primary[900],
+          }}>
+            Framsteg
+          </span>
+          
           <div style={{
-            width: `${overallConfidence}%`,
-            height: '100%',
-            background: DesignSystem.gradient('90deg', [
-              DesignSystem.colors.primary[500],
-              DesignSystem.colors.accent[500],
-            ]),
-            transition: `width ${DesignSystem.transition.normal}`,
-          }} />
+            width: '60px',
+            height: '6px',
+            background: DesignSystem.colors.neutral[200],
+            borderRadius: DesignSystem.borderRadius.sm,
+            overflow: 'hidden',
+          }}>
+            <div style={{
+              width: `${overallConfidence}%`,
+              height: '100%',
+              background: DesignSystem.gradient('90deg', [
+                DesignSystem.colors.primary[500],
+                DesignSystem.colors.accent[500],
+              ]),
+              transition: `width ${DesignSystem.transition.normal}`,
+            }} />
+          </div>
+          
+          <span style={{
+            fontSize: DesignSystem.typography.fontSize.sm,
+            fontWeight: DesignSystem.typography.fontWeight.bold,
+            color: DesignSystem.colors.primary[900],
+            minWidth: '35px',
+            textAlign: 'right',
+          }}>
+            {Math.round(overallConfidence)}%
+          </span>
         </div>
-        
-        <span style={{
-          fontSize: DesignSystem.typography.fontSize.sm,
-          fontWeight: DesignSystem.typography.fontWeight.bold,
-          color: DesignSystem.colors.primary[900],
-          minWidth: '35px',
-          textAlign: 'right',
+
+        {/* Manual Step Navigation */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: DesignSystem.spacing[2],
         }}>
-          {Math.round(overallConfidence)}%
-        </span>
+          {Object.entries(CLUSTER_DEFINITIONS).map(([clusterId, definition], index) => {
+            const clusterType = clusterId as ClusterType;
+            const cluster = clusters[clusterType];
+            const isCurrent = clusterType === currentCluster;
+            const isCompleted = cluster?.confidence >= 75;
+            const isAccessible = index === 0 || (index > 0 && clusters[Object.keys(CLUSTER_DEFINITIONS)[index - 1] as ClusterType]?.confidence >= 75);
+            
+            return (
+              <button
+                key={clusterId}
+                onClick={() => {
+                  if (isAccessible && !isCurrent) {
+                    // User manually navigating to a step
+                    console.log(`Manual navigation to ${clusterType}`);
+                    // This would trigger step transition logic
+                  }
+                }}
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  border: 'none',
+                  background: isCompleted 
+                    ? DesignSystem.colors.accent[500]
+                    : isCurrent 
+                      ? DesignSystem.colors.primary[500]
+                      : isAccessible
+                        ? DesignSystem.colors.neutral[300]
+                        : DesignSystem.colors.neutral[200],
+                  color: isCompleted || isCurrent 
+                    ? DesignSystem.colors.background.primary
+                    : DesignSystem.colors.neutral[600],
+                  fontSize: DesignSystem.typography.fontSize.sm,
+                  fontWeight: DesignSystem.typography.fontWeight.bold,
+                  cursor: isAccessible ? 'pointer' : 'not-allowed',
+                  opacity: isAccessible ? 1 : 0.5,
+                  transition: `all ${DesignSystem.transition.fast}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                title={CLUSTER_NAMES[clusterType]}
+                disabled={!isAccessible}
+              >
+                {isCompleted ? '✓' : index + 1}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

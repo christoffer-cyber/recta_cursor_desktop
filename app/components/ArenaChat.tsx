@@ -164,22 +164,9 @@ export default function ArenaChat({ sessionId, onComplete }: ArenaChatProps) {
         });
       }
       
-      // Update current cluster if AI suggests switching
-      if (data.nextCluster && data.nextCluster !== currentCluster) {
-        const nextCluster = data.nextCluster as ClusterType;
-        const clusterEntries = Object.entries(CLUSTER_DEFINITIONS);
-        const currentIndex = clusterEntries.findIndex(([id]) => id === currentCluster);
-        const nextIndex = clusterEntries.findIndex(([id]) => id === nextCluster);
-        
-        const isNextUnlocked = nextIndex === 0 || (nextIndex > 0 && clusters[clusterEntries[nextIndex - 1][0] as ClusterType]?.confidence >= 75);
-        
-        if (isNextUnlocked) {
-          // Store previous cluster for transition
-          setPreviousCluster(currentCluster);
-          
-          // Show completion modal for current cluster first
-          setStepModalState('completion');
-        }
+      // Check if current cluster is complete and show completion modal
+      if (clusterAnalysis && clusterAnalysis.confidence >= 75) {
+        setStepModalState('completion');
       }
       
       // Update overall confidence

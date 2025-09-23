@@ -338,21 +338,21 @@ export default function StepCompletion({
         <div style={{
           display: 'flex',
           gap: DesignSystem.spacing[3],
-          justifyContent: isComplete ? 'center' : 'space-between',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}>
-          {!isComplete && (
-            <button
-              onClick={onRevisit}
-              style={{
-                ...ComponentTokens.button.secondary,
-                padding: `${DesignSystem.spacing[3]} ${DesignSystem.spacing[6]}`,
-                fontSize: DesignSystem.typography.fontSize.base,
-                fontWeight: DesignSystem.typography.fontWeight.medium,
-              }}
-            >
-              Fortsätt samla information
-            </button>
-          )}
+          <button
+            onClick={onRevisit}
+            style={{
+              ...ComponentTokens.button.secondary,
+              padding: `${DesignSystem.spacing[3]} ${DesignSystem.spacing[6]}`,
+              fontSize: DesignSystem.typography.fontSize.base,
+              fontWeight: DesignSystem.typography.fontWeight.medium,
+              opacity: isComplete ? 0.7 : 1,
+            }}
+          >
+            {isComplete ? 'Fortsätt utforska' : 'Fortsätt samla information'}
+          </button>
           
           <button
             onClick={onContinue}
@@ -361,10 +361,13 @@ export default function StepCompletion({
               padding: `${DesignSystem.spacing[3]} ${DesignSystem.spacing[6]}`,
               fontSize: DesignSystem.typography.fontSize.base,
               fontWeight: DesignSystem.typography.fontWeight.semibold,
+              background: isComplete 
+                ? DesignSystem.colors.accent[500]
+                : DesignSystem.colors.primary[500],
             }}
           >
             {isComplete 
-              ? (isLastStep ? 'Generera rapport →' : 'Gå till nästa steg →')
+              ? (isLastStep ? 'Generera rapport →' : 'Nästa fas →')
               : 'Fortsätt →'
             }
           </button>

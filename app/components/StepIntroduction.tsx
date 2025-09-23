@@ -267,12 +267,14 @@ export default function StepIntroduction({ clusterType, isVisible, onContinue }:
             onClick={onContinue}
             style={{
               ...ComponentTokens.button.primary,
-              padding: `${DesignSystem.spacing[3]} ${DesignSystem.spacing[6]}`,
-              fontSize: DesignSystem.typography.fontSize.base,
-              fontWeight: DesignSystem.typography.fontWeight.semibold,
+              padding: `${DesignSystem.spacing[4]} ${DesignSystem.spacing[8]}`,
+              fontSize: DesignSystem.typography.fontSize.lg,
+              fontWeight: DesignSystem.typography.fontWeight.bold,
+              background: DesignSystem.colors.primary[500],
+              boxShadow: DesignSystem.boxShadow.lg,
             }}
           >
-            Börja med detta steg →
+            🚀 Starta {step.title.toLowerCase()} →
           </button>
         </div>
       </div>
