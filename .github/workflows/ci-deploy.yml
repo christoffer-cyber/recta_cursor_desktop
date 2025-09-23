@@ -45,12 +45,13 @@ jobs:
 
       - name: Deploy with Vercel (preview)
         id: vercel
-        uses: vercel/action@v2
+        uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           working-directory: ./
+          vercel-args: '--prod false'
         env:
           # Runtime secrets used by Next.js build/server
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
