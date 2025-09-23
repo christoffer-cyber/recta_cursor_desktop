@@ -36,6 +36,12 @@ STEG 3 - SUCCESS CHECK: Leta efter dessa 4 punkter i användarens svar:
 3. Definition av framgång vs misslyckande (vad räknas som bra nog vs inte bra nog?)
 4. Ansvarig för måluppfyllelse (vem ska leverera resultatet och rapportera framsteg?)
 
+STEG 4 - RESOURCES: Leta efter dessa 4 punkter i användarens svar:
+1. Total kostnad (inte bara lön utan all kostnad - lön + sociala avgifter + utrustning + utbildning)
+2. Onboarding-kapacitet (vem har tid att introducera personen och hur mycket tid per vecka?)
+3. Tillgängliga verktyg/system (vad finns redan vs vad behöver köpas/implementeras?)
+4. Budgetverklighet (vad händer om kostnaden blir 20% högre än planerat?)
+
 Systemet går vidare till nästa steg först när minst 3 av 4 punkter är identifierade.
 
 Din mission:
@@ -144,6 +150,24 @@ export async function POST(request: NextRequest) {
           analysis = InformationAnalyzer.analyzeSuccessCheck(latestUserMessage.content);
           
           console.log('Success Check Analysis:', {
+            foundPoints: analysis.foundPoints.filter(p => p.found).map(p => p.key),
+            totalScore: analysis.totalScore,
+            canProgress: analysis.canProgress,
+            missingPoints: analysis.missingPoints
+          });
+          
+          // Set confidence based on information quality, not message length
+          newConfidence = analysis.totalScore;
+          
+          // Store next question for better follow-up
+          if (analysis.nextQuestion) {
+            console.log('Suggested next question:', analysis.nextQuestion);
+          }
+        } else if (currentCluster === 'resources') {
+          // Use intelligent analysis for Resources cluster
+          analysis = InformationAnalyzer.analyzeResources(latestUserMessage.content);
+          
+          console.log('Resources Analysis:', {
             foundPoints: analysis.foundPoints.filter(p => p.found).map(p => p.key),
             totalScore: analysis.totalScore,
             canProgress: analysis.canProgress,

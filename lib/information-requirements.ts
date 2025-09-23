@@ -311,6 +311,115 @@ export const SUCCESS_CHECK_REQUIREMENTS: ClusterRequirements = {
   ]
 };
 
+// CLUSTER 4: RESOURCES - Universal för alla roller och branscher
+export const RESOURCES_REQUIREMENTS: ClusterRequirements = {
+  name: "Resource Boundaries",
+  description: "Kartlägga verkliga begränsningar och budget",
+  minimumPoints: 3, // Minst 3 av 4 punkter
+  progressThreshold: 75, // 75% confidence för att gå vidare
+  requiredPoints: [
+    {
+      key: "total_cost",
+      description: "Total kostnad - inte bara lön utan all kostnad (lön + sociala avgifter + utrustning + utbildning)",
+      weight: 4,
+      keywords: [
+        "total", "totalt", "inklusive", "allt", "hela", "komplett", "fullständig",
+        "lön", "salary", "sociala avgifter", "arbetsgivaravgifter", "skatt",
+        "utrustning", "laptop", "dator", "verktyg", "licens", "programvara",
+        "utbildning", "kurser", "certifiering", "coaching", "mentor",
+        "kr", "kronor", "SEK", "MSEK", "miljoner", "tusen", "budget",
+        "år", "månad", "årlig", "månadsvis"
+      ],
+      patterns: [
+        /total.*budget|kostnad.*inklusive.*allt/i,
+        /lön.*plus.*sociala.*avgifter/i,
+        /inklusive.*utrustning|verktyg|licens/i,
+        /hela.*kostnaden.*år|månad/i,
+        /\d+.*kr.*inklusive.*allt/i,
+        /total.*\d+.*kr|MSEK|miljoner/i,
+        /lön.*sociala.*avgifter.*utrustning/i,
+        /komplett.*kostnad.*inklusive/i,
+        /fullständig.*budget.*år/i,
+        /allt.*inklusive.*\d+.*kr/i
+      ]
+    },
+    {
+      key: "onboarding_capacity",
+      description: "Onboarding-kapacitet - vem har tid att introducera personen och hur mycket tid per vecka?",
+      weight: 4,
+      keywords: [
+        "onboarding", "introduktion", "introducera", "vägledning", "mentor",
+        "tid", "timmar", "vecka", "månad", "dedikera", "ansvara", "hjälpa",
+        "chef", "manager", "ledare", "kollega", "team", "avdelning",
+        "första", "initial", "inledande", "grundläggande", "start",
+        "per", "varje", "veckovis", "månadsvis", "daglig"
+      ],
+      patterns: [
+        /\d+.*timmar.*per.*vecka|månad/i,
+        /chef|manager.*dedikera.*\d+.*timmar/i,
+        /onboarding.*\d+.*timmar.*första/i,
+        /introduktion.*\d+.*veckor|månader/i,
+        /mentor.*ansvarar.*\d+.*timmar/i,
+        /första.*månad.*\d+.*timmar/i,
+        /vägledning.*\d+.*timmar.*vecka/i,
+        /team.*hjälper.*\d+.*timmar/i,
+        /initial.*period.*\d+.*timmar/i,
+        /grundläggande.*introduktion.*\d+.*timmar/i
+      ]
+    },
+    {
+      key: "available_tools_systems",
+      description: "Tillgängliga verktyg/system - vad finns redan vs vad behöver köpas/implementeras?",
+      weight: 3,
+      keywords: [
+        "verktyg", "system", "programvara", "licens", "plattform", "program",
+        "finns", "redan", "befintlig", "har", "tillgänglig", "installerad",
+        "behöver", "köpa", "implementera", "installera", "skaffa", "anskaffa",
+        "saknar", "brist", "saknas", "inte", "ingen", "utan",
+        "Salesforce", "Microsoft", "Google", "Adobe", "Power BI", "Tableau",
+        "CRM", "ERP", "HR-system", "laptop", "dator", "utrustning"
+      ],
+      patterns: [
+        /vi har.*men.*behöver.*köpa/i,
+        /finns.*redan.*men.*saknar/i,
+        /befintlig.*system.*men.*behöver/i,
+        /har.*Salesforce|Power BI|Microsoft.*men/i,
+        /verktyg.*redan.*men.*köpa.*\d+.*kr/i,
+        /system.*finns.*men.*implementera/i,
+        /plattform.*tillgänglig.*men.*licens/i,
+        /program.*installerat.*men.*saknar/i,
+        /utrustning.*har.*men.*behöver/i,
+        /befintlig.*men.*anskaffa.*\d+.*kr/i
+      ]
+    },
+    {
+      key: "budget_reality",
+      description: "Budgetverklighet - vad händer om kostnaden blir 20% högre än planerat?",
+      weight: 3,
+      keywords: [
+        "budget", "kostnad", "dyrare", "högre", "över", "överskrida",
+        "vad händer", "om det blir", "faller", "överstiger", "överskrider",
+        "planerat", "beräknat", "budgeterat", "förväntat", "initial",
+        "20%", "30%", "50%", "dubbelt", "trippelt", "mer än",
+        "måste", "behöver", "vänta", "skjuta upp", "Q1", "Q2", "Q3", "Q4",
+        "kvartal", "år", "senare", "framtida", "nästa"
+      ],
+      patterns: [
+        /om.*kostnaden.*blir.*högre.*vad händer/i,
+        /överstiger.*budget.*\d+%.*måste/i,
+        /dyrare.*än.*planerat.*vänta/i,
+        /över.*\d+%.*skjuta upp.*Q[1-4]/i,
+        /överskrider.*budget.*\d+%.*behöver/i,
+        /högre.*kostnad.*måste.*vänta/i,
+        /över.*beräknat.*\d+%.*senare/i,
+        /dyrare.*än.*förväntat.*Q[1-4]/i,
+        /överstiger.*\d+%.*måste.*vänta/i,
+        /högre.*än.*planerat.*skjuta upp/i
+      ]
+    }
+  ]
+};
+
 // Analysis Result Type
 export type InformationAnalysis = {
   clusterId: string;
@@ -418,6 +527,36 @@ export class InformationAnalyzer {
     };
   }
 
+  static analyzeResources(userMessage: string): InformationAnalysis {
+    const requirements = RESOURCES_REQUIREMENTS;
+    const foundPoints = requirements.requiredPoints.map(point => {
+      const found = this.checkForInformationPoint(userMessage, point);
+      return {
+        key: point.key,
+        found: found.found,
+        confidence: found.confidence,
+        extractedText: found.extractedText
+      };
+    });
+
+    const foundCount = foundPoints.filter(p => p.found).length;
+    const totalScore = Math.round((foundCount / requirements.requiredPoints.length) * 100);
+    const canProgress = foundCount >= requirements.minimumPoints && totalScore >= requirements.progressThreshold;
+    
+    const missingPoints = foundPoints
+      .filter(p => !p.found)
+      .map(p => requirements.requiredPoints.find(rp => rp.key === p.key)?.description || p.key);
+
+    return {
+      clusterId: 'resources',
+      foundPoints,
+      totalScore,
+      missingPoints,
+      canProgress,
+      nextQuestion: canProgress ? undefined : this.generateFollowUpQuestion(missingPoints[0], 'resources')
+    };
+  }
+
   private static checkForInformationPoint(
     message: string, 
     point: InformationPoint
@@ -522,6 +661,28 @@ export class InformationAnalyzer {
           "Vem är ansvarig för att leverera dessa resultat?",
           "Vem ska rapportera framsteg och till vem?",
           "Vilken roll eller person har ansvaret för måluppfyllelse?"
+        ]
+      },
+      'resources': {
+        "Total kostnad - inte bara lön utan all kostnad (lön + sociala avgifter + utrustning + utbildning)": [
+          "Kan du ge en total kostnad som inkluderar lön, sociala avgifter, utrustning och utbildning?",
+          "Vad blir den totala kostnaden per år inklusive allt?",
+          "Hur mycket kostar det totalt med lön, arbetsgivaravgifter och utrustning?"
+        ],
+        "Onboarding-kapacitet - vem har tid att introducera personen och hur mycket tid per vecka?": [
+          "Vem kan dedikera tid för att introducera den nya personen?",
+          "Hur många timmar per vecka kan någon ägna åt onboarding?",
+          "Vem ansvarar för introduktionen och hur mycket tid har de?"
+        ],
+        "Tillgängliga verktyg/system - vad finns redan vs vad behöver köpas/implementeras?": [
+          "Vilka verktyg och system finns redan vs vad behöver köpas?",
+          "Vad har ni redan installerat och vad saknar ni?",
+          "Vilka system behöver ni köpa eller implementera för denna roll?"
+        ],
+        "Budgetverklighet - vad händer om kostnaden blir 20% högre än planerat?": [
+          "Vad händer om kostnaden blir 20% högre än ni planerat?",
+          "Om budgeten överskrids med 20%, vad gör ni då?",
+          "Vad händer om den totala kostnaden blir dyrare än beräknat?"
         ]
       }
     };
