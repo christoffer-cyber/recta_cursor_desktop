@@ -1,11 +1,11 @@
 "use client";
 import React from "react";
-import { ClusterType, ArenaCluster } from "../../lib/types";
+import { ClusterType } from "../../lib/types";
 import { CLUSTER_DEFINITIONS } from "../../lib/arena-clusters";
 import { DesignSystem, ComponentTokens, DesignUtils } from "../../lib/design-system";
 
 interface ModernClusterTopbarProps {
-  clusters: Record<ClusterType, ArenaCluster>;
+  clusters: Record<ClusterType, { confidence: number; status: string }>;
   currentCluster: ClusterType;
   overallConfidence: number;
 }

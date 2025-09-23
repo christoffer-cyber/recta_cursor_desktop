@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 import { Message } from "../../lib/types";
-import { ClusterType, ArenaCluster } from "../../lib/types";
-import { ArenaLogicEngine, CLUSTER_DEFINITIONS } from "../../lib/arena-clusters";
+import { ClusterType } from "../../lib/types";
+import { CLUSTER_DEFINITIONS } from "../../lib/arena-clusters";
 import { DesignSystem, ComponentTokens } from "../../lib/design-system";
 import StepIntroduction from "./StepIntroduction";
 import StepCompletion from "./StepCompletion";
@@ -26,9 +26,16 @@ export default function ArenaChat({ sessionId, onComplete }: ArenaChatProps) {
   
   // Cluster-based state
   const [currentCluster, setCurrentCluster] = useState<ClusterType>('pain-point');
-  const [clusters, setClusters] = useState<Record<ClusterType, ArenaCluster>>(() => 
-    ArenaLogicEngine.initializeClusters()
-  );
+  const [clusters, setClusters] = useState<Record<ClusterType, { confidence: number; status: string }>>(() => {
+    const initialClusters: Record<ClusterType, { confidence: number; status: string }> = {} as Record<ClusterType, { confidence: number; status: string }>;
+    Object.keys(CLUSTER_DEFINITIONS).forEach((clusterId) => {
+      initialClusters[clusterId as ClusterType] = {
+        confidence: 0,
+        status: clusterId === 'pain-point' ? 'in-progress' : 'not-started'
+      };
+    });
+    return initialClusters;
+  });
   const [overallConfidence, setOverallConfidence] = useState(0);
   
   // Step modal state
@@ -171,34 +178,18 @@ export default function ArenaChat({ sessionId, onComplete }: ArenaChatProps) {
           setPreviousCluster(currentCluster);
           
           // Show completion modal for current cluster first
-          if (clusterAnalysis) {
-            setStepModalState('completion');
-          } else {
-            // Direct transition if no analysis data
-            setStepModalState('transition');
-            setCurrentCluster(nextCluster);
-            
-            setClusters(prev => ({
-              ...prev,
-              [nextCluster]: {
-                ...prev[nextCluster],
-                status: 'in-progress'
-              },
-              [currentCluster]: {
-                ...prev[currentCluster],
-                status: prev[currentCluster].confidence >= 75 ? 'complete' : 'needs-revisit'
-              }
-            }));
-          }
+          setStepModalState('completion');
         }
       }
       
       // Update overall confidence
-      const newOverallConfidence = ArenaLogicEngine.calculateOverallConfidence(clusters);
+      const totalConfidence = Object.values(clusters).reduce((sum, cluster) => sum + cluster.confidence, 0);
+      const newOverallConfidence = totalConfidence / Object.keys(clusters).length;
       setOverallConfidence(newOverallConfidence);
       
       // Check if analysis is complete
-      if (data.isComplete || ArenaLogicEngine.isAnalysisComplete(clusters)) {
+      const allClustersComplete = Object.values(clusters).every(cluster => cluster.confidence >= 75);
+      if (data.isComplete || allClustersComplete) {
         setIsComplete(true);
         onComplete([...messages, userMessage, aiMessage]);
       }
@@ -277,7 +268,24 @@ export default function ArenaChat({ sessionId, onComplete }: ArenaChatProps) {
           onContinue={() => {
             // Show transition then move to next cluster
             setStepModalState('transition');
-            // Logic to move to next cluster would go here
+            // Move to next cluster
+            const clusterEntries = Object.entries(CLUSTER_DEFINITIONS);
+            const currentIndex = clusterEntries.findIndex(([id]) => id === currentCluster);
+            if (currentIndex < clusterEntries.length - 1) {
+              const nextCluster = clusterEntries[currentIndex + 1][0] as ClusterType;
+              setCurrentCluster(nextCluster);
+              setClusters(prev => ({
+                ...prev,
+                [nextCluster]: {
+                  ...prev[nextCluster],
+                  status: 'in-progress'
+                },
+                [currentCluster]: {
+                  ...prev[currentCluster],
+                  status: prev[currentCluster].confidence >= 75 ? 'complete' : 'needs-revisit'
+                }
+              }));
+            }
           }}
           onRevisit={handleStepCompletionRevisit}
         />
