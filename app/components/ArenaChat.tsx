@@ -4,6 +4,9 @@ import { Message } from "../../lib/types";
 import { ClusterType, ArenaCluster } from "../../lib/types";
 import { ArenaLogicEngine, CLUSTER_DEFINITIONS } from "../../lib/arena-clusters";
 import { DesignSystem, ComponentTokens } from "../../lib/design-system";
+import StepIntroduction from "./StepIntroduction";
+import StepCompletion from "./StepCompletion";
+import StepTransition from "./StepTransition";
 
 interface ArenaChatProps {
   sessionId: string;
@@ -11,6 +14,7 @@ interface ArenaChatProps {
 }
 
 type FlowStep = 'setup' | 'conversation' | 'extracting' | 'preview' | 'generating' | 'complete';
+type StepModalState = 'introduction' | 'completion' | 'transition' | null;
 
 export default function ArenaChat({ sessionId, onComplete }: ArenaChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -26,6 +30,15 @@ export default function ArenaChat({ sessionId, onComplete }: ArenaChatProps) {
     ArenaLogicEngine.initializeClusters()
   );
   const [overallConfidence, setOverallConfidence] = useState(0);
+  
+  // Step modal state
+  const [stepModalState, setStepModalState] = useState<StepModalState>('introduction');
+  const [previousCluster, setPreviousCluster] = useState<ClusterType | null>(null);
+  const [clusterAnalysis, setClusterAnalysis] = useState<{
+    foundPoints: string[];
+    missingPoints: string[];
+    confidence: number;
+  } | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -44,8 +57,28 @@ export default function ArenaChat({ sessionId, onComplete }: ArenaChatProps) {
     if (storedCompanyName) {
       setCompanyName(storedCompanyName);
       setCurrentStep('conversation');
+      // Show introduction for first cluster
+      setStepModalState('introduction');
     }
   }, []);
+
+  // Handle step modal actions
+  const handleStepIntroductionContinue = () => {
+    setStepModalState(null);
+  };
+
+  const handleStepCompletionContinue = () => {
+    setStepModalState(null);
+  };
+
+  const handleStepCompletionRevisit = () => {
+    setStepModalState(null);
+  };
+
+  const handleStepTransitionComplete = () => {
+    setStepModalState(null);
+    setPreviousCluster(null);
+  };
 
   const handleSendMessage = async (messageContent?: string) => {
     const content = messageContent || input.trim();
@@ -114,6 +147,15 @@ export default function ArenaChat({ sessionId, onComplete }: ArenaChatProps) {
           }
         }));
       }
+
+      // Store cluster analysis for completion modal
+      if (data.analysis) {
+        setClusterAnalysis({
+          foundPoints: data.analysis.foundPoints?.map((p: { key: string }) => p.key) || [],
+          missingPoints: data.analysis.missingPoints || [],
+          confidence: data.analysis.totalScore || 0
+        });
+      }
       
       // Update current cluster if AI suggests switching
       if (data.nextCluster && data.nextCluster !== currentCluster) {
@@ -125,19 +167,29 @@ export default function ArenaChat({ sessionId, onComplete }: ArenaChatProps) {
         const isNextUnlocked = nextIndex === 0 || (nextIndex > 0 && clusters[clusterEntries[nextIndex - 1][0] as ClusterType]?.confidence >= 75);
         
         if (isNextUnlocked) {
-          setCurrentCluster(nextCluster);
+          // Store previous cluster for transition
+          setPreviousCluster(currentCluster);
           
-          setClusters(prev => ({
-            ...prev,
-            [nextCluster]: {
-              ...prev[nextCluster],
-              status: 'in-progress'
-            },
-            [currentCluster]: {
-              ...prev[currentCluster],
-              status: prev[currentCluster].confidence >= 75 ? 'complete' : 'needs-revisit'
-            }
-          }));
+          // Show completion modal for current cluster first
+          if (clusterAnalysis) {
+            setStepModalState('completion');
+          } else {
+            // Direct transition if no analysis data
+            setStepModalState('transition');
+            setCurrentCluster(nextCluster);
+            
+            setClusters(prev => ({
+              ...prev,
+              [nextCluster]: {
+                ...prev[nextCluster],
+                status: 'in-progress'
+              },
+              [currentCluster]: {
+                ...prev[currentCluster],
+                status: prev[currentCluster].confidence >= 75 ? 'complete' : 'needs-revisit'
+              }
+            }));
+          }
         }
       }
       
@@ -184,8 +236,9 @@ export default function ArenaChat({ sessionId, onComplete }: ArenaChatProps) {
       sessionStorage.setItem('setupCompanyName', companyName);
     }
     setCurrentStep('conversation');
+    setStepModalState('introduction');
     
-    // Start with first message
+    // Start with first message after introduction
     const firstMessage = "Hej! Jag vill förbereda en rekrytering.";
     handleSendMessage(firstMessage);
   };
@@ -205,6 +258,40 @@ export default function ArenaChat({ sessionId, onComplete }: ArenaChatProps) {
 
   return (
     <div style={ComponentTokens.chatContainer}>
+      {/* Step Modals */}
+      {stepModalState === 'introduction' && (
+        <StepIntroduction
+          clusterType={currentCluster}
+          isVisible={true}
+          onContinue={handleStepIntroductionContinue}
+        />
+      )}
+      
+      {stepModalState === 'completion' && clusterAnalysis && (
+        <StepCompletion
+          clusterType={currentCluster}
+          isVisible={true}
+          confidence={clusterAnalysis.confidence}
+          foundPoints={clusterAnalysis.foundPoints}
+          missingPoints={clusterAnalysis.missingPoints}
+          onContinue={() => {
+            // Show transition then move to next cluster
+            setStepModalState('transition');
+            // Logic to move to next cluster would go here
+          }}
+          onRevisit={handleStepCompletionRevisit}
+        />
+      )}
+      
+      {stepModalState === 'transition' && previousCluster && (
+        <StepTransition
+          fromCluster={previousCluster}
+          toCluster={currentCluster}
+          isVisible={true}
+          onComplete={handleStepTransitionComplete}
+        />
+      )}
+
       {currentStep === 'setup' && (
         <div className="arena-setup">
           <div className="setup-content">
