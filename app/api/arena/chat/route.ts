@@ -294,7 +294,7 @@ Använd samma engagerande stil som tidigare - läs mellan raderna, ställ utmana
         enhancedSystemPrompt, // System prompt goes separately in Claude
         {
           model: CLAUDE_MODEL,
-          maxTokens: Math.min(DEFAULT_MAX_TOKENS, 400),
+          maxTokens: Math.min(DEFAULT_MAX_TOKENS, 2000), // FIXED: Increased from 400 to 2000
           temperature: DEFAULT_TEMPERATURE
         }
       );
