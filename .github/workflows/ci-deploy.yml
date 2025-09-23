@@ -87,8 +87,7 @@ jobs:
           CLAUDE_TEMPERATURE: ${{ secrets.CLAUDE_TEMPERATURE }}
           OPENAI_EMBEDDING_MODEL: ${{ secrets.OPENAI_EMBEDDING_MODEL }}
           AI_REQUEST_TIMEOUT_MS: ${{ secrets.AI_REQUEST_TIMEOUT_MS }}
-          BOLAGSVERKET_CLIENT_ID: ${{ secrets.BOLAGSVERKET_CLIENT_ID }}
-          BOLAGSVERKET_CLIENT_SECRET: ${{ secrets.BOLAGSVERKET_CLIENT_SECRET }}
+          # BOLAGSVERKET removed
 
       - name: Output preview URL
         run: |

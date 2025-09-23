@@ -6,7 +6,7 @@ import ClusterTopbar from "../components/ClusterTopbar";
 import DataPreview from "../components/DataPreview";
 // LiveInsightsPanel removed
 // ChapterProgress removed
-import { CompanyIntelligenceAgent, CompanyData } from "../../lib/company-intelligence";
+// CompanyIntelligence removed
 import { ArenaLogicEngine, CLUSTER_DEFINITIONS } from "../../lib/arena-clusters";
 import { ClusterType, ArenaCluster, Message } from "../../lib/types";
 
@@ -22,7 +22,7 @@ export default function Arena() {
   const [extractedData, setExtractedData] = useState<Record<string, unknown> | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [companyName, setCompanyName] = useState('');
-  const [companyIntelligence, setCompanyIntelligence] = useState<CompanyData | null>(null);
+  // CompanyIntelligence removed
   
   // New cluster-based state
   const [currentCluster, setCurrentCluster] = useState<ClusterType>('pain-point');
@@ -50,24 +50,9 @@ export default function Arena() {
   useEffect(() => {
     // Check if we have stored company data from a previous session
     const storedCompanyName = sessionStorage.getItem('setupCompanyName');
-    const storedCompanyData = sessionStorage.getItem('companyIntelligence');
-    
     if (storedCompanyName) {
       setCompanyName(storedCompanyName);
-    }
-    
-    if (storedCompanyData) {
-      try {
-        setCompanyIntelligence(JSON.parse(storedCompanyData));
-        setCurrentStep('conversation');
-        
-        // Auto-start conversation if we have company data
-        setTimeout(() => {
-          handleSendMessage("Hej! Jag vill förbereda en rekrytering.");
-        }, 500);
-      } catch (error) {
-        console.error('Error parsing stored company data:', error);
-      }
+      setCurrentStep('conversation');
     }
   }, []);
 
@@ -224,15 +209,8 @@ export default function Arena() {
     try {
       console.log(`🔍 Looking up company: ${companyName}`);
       
-      const agent = new CompanyIntelligenceAgent();
-      const data = await agent.gatherCompanyIntelligence(companyName);
-      
-      if (data) {
-        setCompanyIntelligence(data);
-        console.log('✅ Company data retrieved:', data);
-      } else {
-        console.log('❌ No company data found');
-      }
+      // CompanyIntelligence removed - go directly to conversation
+      console.log('✅ Proceeding to conversation');
     } catch (error) {
       console.error('Company lookup error:', error);
     } finally {
@@ -245,9 +223,7 @@ export default function Arena() {
     if (companyName) {
       sessionStorage.setItem('setupCompanyName', companyName);
     }
-    if (companyIntelligence) {
-      sessionStorage.setItem('companyIntelligence', JSON.stringify(companyIntelligence));
-    }
+    // CompanyIntelligence removed
     
     setCurrentStep('conversation');
     
@@ -265,10 +241,8 @@ export default function Arena() {
     
     initializeRAG();
     
-    // Enhanced first message with company context
-    const firstMessage = companyIntelligence?.basicInfo?.legalName
-      ? `Hej! Jag representerar ${companyIntelligence.basicInfo.legalName} och vill förbereda en rekrytering.`
-      : "Hej! Jag vill förbereda en rekrytering.";
+    // Simple first message
+    const firstMessage = "Hej! Jag vill förbereda en rekrytering.";
       
     handleSendMessage(firstMessage);
   };
@@ -313,7 +287,7 @@ export default function Arena() {
         body: JSON.stringify({
           extractedData,
           sessionId,
-          companyIntelligence // Send company intelligence to report generation
+          // CompanyIntelligence removed
         })
       });
       
@@ -418,41 +392,41 @@ export default function Arena() {
                     </button>
                   </div>
 
-                  {companyIntelligence && (
+                  {false && (
                     <div className="company-preview">
                       <h3 className="preview-title">📊 Företagsinformation hämtad</h3>
                       
                       <div className="preview-grid">
                         <div className="preview-item">
                           <span className="preview-label">Juridiskt namn:</span>
-                          <span className="preview-value">{companyIntelligence?.basicInfo?.legalName}</span>
+                          <span className="preview-value">Company Name</span>
                         </div>
                         
-                        {companyIntelligence?.basicInfo?.organizationNumber !== 'Unknown' && (
+                        {false && (
                           <div className="preview-item">
                             <span className="preview-label">Org.nummer:</span>
-                            <span className="preview-value">{companyIntelligence?.basicInfo?.organizationNumber}</span>
+                            <span className="preview-value">123456-7890</span>
                           </div>
                         )}
                         
-                        {companyIntelligence?.basicInfo?.registrationDate !== 'Unknown' && (
+                        {false && (
                           <div className="preview-item">
                             <span className="preview-label">Registrerat:</span>
-                            <span className="preview-value">{companyIntelligence?.basicInfo?.registrationDate}</span>
+                            <span className="preview-value">2020-01-01</span>
                           </div>
                         )}
 
-                        {companyIntelligence?.financial?.employees && (
+                        {false && (
                           <div className="preview-item">
                             <span className="preview-label">Anställda:</span>
-                            <span className="preview-value">~{companyIntelligence?.financial?.employees} personer</span>
+                            <span className="preview-value">~50 personer</span>
                           </div>
                         )}
 
-                        {companyIntelligence?.leadership?.ceo && (
+                        {false && (
                           <div className="preview-item">
                             <span className="preview-label">VD:</span>
-                            <span className="preview-value">{companyIntelligence?.leadership?.ceo}</span>
+                            <span className="preview-value">CEO Name</span>
                           </div>
                         )}
                       </div>
@@ -460,7 +434,7 @@ export default function Arena() {
                       <div className="preview-sources">
                         <p className="sources-label">Källor:</p>
                         <div className="sources-tags">
-                          {(companyIntelligence?.sources || []).map((source: string, index: number) => (
+                          {[].map((source: string, index: number) => (
                             <span key={index} className="source-tag">{source}</span>
                           ))}
                         </div>
