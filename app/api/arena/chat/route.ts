@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getClaudeClient } from '../../../../lib/claude-client';
 import { CLAUDE_MODEL, DEFAULT_MAX_TOKENS, DEFAULT_TEMPERATURE } from '../../../../lib/ai-config';
+import { InformationAnalyzer, PAIN_POINT_REQUIREMENTS } from '../../../../lib/information-requirements';
 
 const SYSTEM_PROMPT = `Du är en expert på strategisk rekrytering och organisationsutveckling. Din uppgift är att hjälpa företag att förbereda sig optimalt innan de påbörjar en rekryteringsprocess.
 
@@ -13,6 +14,17 @@ KRITISKA REGLER FÖR SVAR - FÖLJ DESSA EXAKT:
 - ALDRIG ställ två frågor i samma svar
 - ALDRIG ge långa förklaringar innan frågan
 - EXEMPEL: "Jag förstår, det låter som ett systematiskt problem. Har ni tydliga processer för när ekonomifunktionen ska presentera affärskritiska analyser?"
+
+INTELLIGENT INFORMATIONSINSAMLING:
+För varje område samlar systemet in specifik information baserat på kvalitet, inte kvantitet:
+
+STEG 1 - PAIN POINT: Leta efter dessa 4 punkter i användarens svar:
+1. Nuvarande vs önskad situation (vad är problemet konkret?)
+2. Konkreta konsekvenser (vad händer när problemet uppstår?)
+3. Omfattning (hur ofta/stort är problemet?)
+4. Vem påverkas (vilka märker av problemet?)
+
+Systemet går vidare till nästa steg först när minst 3 av 4 punkter är identifierade.
 
 Din mission:
 1. Extrahera kritisk information om företaget, rollen och kontexten
@@ -31,14 +43,6 @@ KRITISKT: Säg ALDRIG "ANALYS_KLAR" förrän du har utforskat ALLA dessa område
 6. Alternative Validation (utmana rekrytering som bästa lösning)
 
 Endast när alla 6 områden har täckts djupt kan du säga "ANALYS_KLAR".
-
-Viktiga områden att täcka:
-- Företagets tillväxtfas och strategiska mål
-- Specifika utmaningar som rollen ska lösa
-- Team-dynamik och kulturella aspekter
-- Budget och tidslinje
-- Tidigare rekryteringsframgångar/misslyckanden
-- Konkreta prestationsmål för rollen
 
 Börja med att hälsa och fråga om företaget och den tänkta rollen.`;
 
@@ -83,25 +87,41 @@ export async function POST(request: NextRequest) {
           clusterExists: !!clusters[currentCluster]
         });
         
-        // Smart cluster update - analyze message quality and length
-        const currentConfidence = clusters[currentCluster]?.confidence || 0;
-        const messageLength = latestUserMessage.content.length;
-        const hasQuestion = latestUserMessage.content.includes('?');
-        const hasDetails = latestUserMessage.content.length > 100;
+        // INTELLIGENT INFORMATION ANALYSIS - Quality over Quantity
+        let analysis;
+        let newConfidence = clusters[currentCluster]?.confidence || 0;
         
-        // Base confidence increase
-        let confidenceIncrease = 20; // Base increase
-        
-        // Bonus for detailed responses
-        if (hasDetails) confidenceIncrease += 10;
-        if (hasQuestion) confidenceIncrease += 5;
-        if (messageLength > 200) confidenceIncrease += 10;
+        if (currentCluster === 'pain-point') {
+          // Use intelligent analysis for Pain Point cluster
+          analysis = InformationAnalyzer.analyzePainPoint(latestUserMessage.content);
+          
+          console.log('Pain Point Analysis:', {
+            foundPoints: analysis.foundPoints.filter(p => p.found).map(p => p.key),
+            totalScore: analysis.totalScore,
+            canProgress: analysis.canProgress,
+            missingPoints: analysis.missingPoints
+          });
+          
+          // Set confidence based on information quality, not message length
+          newConfidence = analysis.totalScore;
+          
+          // Store next question for better follow-up
+          if (analysis.nextQuestion) {
+            console.log('Suggested next question:', analysis.nextQuestion);
+          }
+        } else {
+          // Fallback for other clusters (will be updated later)
+          const messageLength = latestUserMessage.content.length;
+          const hasDetails = messageLength > 100;
+          let confidenceIncrease = hasDetails ? 25 : 15;
+          newConfidence = Math.min(100, (clusters[currentCluster]?.confidence || 0) + confidenceIncrease);
+        }
         
         clusterUpdate = {
           clusterId: currentCluster,
           updates: {
-            confidence: Math.min(100, currentConfidence + confidenceIncrease),
-            status: 'in-progress' as const,
+            confidence: newConfidence,
+            status: newConfidence >= 75 ? 'complete' : 'in-progress',
             lastUpdated: new Date().toISOString()
           }
         };
