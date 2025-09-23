@@ -280,7 +280,7 @@ Använd samma engagerande stil som tidigare - läs mellan raderna, ställ utmana
       finalMessage = "Perfekt! Jag har nu tillräcklig information för att skapa en grundlig analys. Låt oss generera rapporten.";
     }
     
-    // AUTOMATIC SESSION LOGGING
+    // SIMPLE SESSION LOGGING - NO FETCH CALLS
     const sessionDuration = Date.now() - sessionStartTime;
     console.log('=== SESSION COMPLETION DATA ===');
     console.log('Session duration (ms):', sessionDuration);
@@ -291,45 +291,8 @@ Använd samma engagerande stil som tidigare - läs mellan raderna, ställ utmana
     console.log('Cluster update:', clusterUpdate);
     console.log('Next cluster:', nextCluster);
     console.log('Contradictions found:', contradictions.length);
+    console.log('Session ID:', sessionId);
     console.log('=== ARENA CHAT SESSION END ===');
-    
-    // Save session data to file system
-    try {
-      if (sessionId) {
-        const sessionData = {
-          session_id: sessionId,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          current_cluster: currentCluster,
-          clusters_data: clusters,
-          messages: messages,
-          messages_count: messages.length,
-          is_complete: isComplete || analysisComplete,
-          duration: sessionDuration,
-          last_message: finalMessage,
-          contradictions_found: contradictions,
-          overall_confidence: overallConfidence || 0,
-          cluster_update: clusterUpdate,
-          next_cluster: nextCluster
-        };
-
-        // Save to sessions API
-        await fetch(`${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'}/api/admin/sessions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            sessionId,
-            sessionData
-          })
-        });
-
-        console.log('Session data saved successfully');
-      }
-    } catch (dbError) {
-      console.error('Failed to save session data:', dbError);
-    }
     
     return NextResponse.json({
       message: finalMessage,
