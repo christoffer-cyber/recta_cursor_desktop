@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getClaudeClient } from '../../../../lib/claude-client';
 import { CLAUDE_MODEL, DEFAULT_MAX_TOKENS, DEFAULT_TEMPERATURE } from '../../../../lib/ai-config';
-import { InformationAnalyzer, PAIN_POINT_REQUIREMENTS } from '../../../../lib/information-requirements';
+import { InformationAnalyzer } from '../../../../lib/information-requirements';
 
 const SYSTEM_PROMPT = `Du är en expert på strategisk rekrytering och organisationsutveckling. Din uppgift är att hjälpa företag att förbereda sig optimalt innan de påbörjar en rekryteringsprocess.
 
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
           // Fallback for other clusters (will be updated later)
           const messageLength = latestUserMessage.content.length;
           const hasDetails = messageLength > 100;
-          let confidenceIncrease = hasDetails ? 25 : 15;
+          const confidenceIncrease = hasDetails ? 25 : 15;
           newConfidence = Math.min(100, (clusters[currentCluster]?.confidence || 0) + confidenceIncrease);
         }
         
