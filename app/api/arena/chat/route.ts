@@ -1,112 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getClaudeClient } from '../../../../lib/claude-client';
-import { CLAUDE_MODEL, DEFAULT_MAX_TOKENS, DEFAULT_TEMPERATURE } from '../../../../lib/ai-config';
-import { ArenaEngine, ArenaContext } from '../../../../lib/arena-engine';
-import { ArenaPrompts } from '../../../../lib/arena-prompts';
-import { ArenaResponseHandler } from '../../../../lib/arena-response-handler';
 
-// System prompt moved to ArenaPrompts class for better organization
-
+// Simple, robust Arena chat API
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== REFACTORED ARENA CHAT START ===');
+    console.log('=== SIMPLE ARENA CHAT START ===');
     
     const body = await request.json();
-    
-    // Validate request using response handler
-    const validation = ArenaResponseHandler.validateRequest(body);
-    if (!validation.isValid) {
-      return NextResponse.json({ error: validation.error }, { status: 400 });
-    }
-
-    // Extract context using response handler
-    const context = ArenaResponseHandler.extractContext(body);
-    
-    // Log request info using response handler
-    ArenaResponseHandler.logRequestInfo({
-      messagesCount: context.messages.length,
-      sessionId: context.sessionId,
-      currentCluster: context.currentCluster,
-      hasClusters: !!context.clusters
+    console.log('Request body:', { 
+      hasMessages: !!body.messages, 
+      messagesCount: body.messages?.length || 0,
+      currentCluster: body.currentCluster 
     });
     
-    // Simplified cluster analysis for now
-    let clusterUpdate = null;
-    if (context.currentCluster && context.clusters && context.latestUserMessage?.role === 'user') {
-      console.log('Processing simple cluster update...', { 
-        currentCluster: context.currentCluster, 
-        hasClusters: !!context.clusters, 
-        hasLatestMessage: !!context.latestUserMessage,
-        latestUserMessageRole: context.latestUserMessage?.role
-      });
-
-      // Simple confidence increase based on message length
-      const messageLength = context.latestUserMessage.content.length;
-      const currentConfidence = context.clusters[context.currentCluster]?.confidence || 0;
-      const confidenceIncrease = messageLength > 100 ? 25 : 15;
-      const newConfidence = Math.min(100, currentConfidence + confidenceIncrease);
-
-      clusterUpdate = {
-        clusterId: context.currentCluster,
-        updates: {
-          confidence: newConfidence,
-          status: newConfidence >= 75 ? 'complete' : 'in-progress'
-        }
-      };
-      
-      console.log('Simple cluster update created:', clusterUpdate);
+    // Basic validation
+    if (!body.messages || !Array.isArray(body.messages) || body.messages.length === 0) {
+      return NextResponse.json({ error: 'No messages provided' }, { status: 400 });
     }
 
-    // Build system prompt using ArenaPrompts
-    console.log('Building system prompt with cluster context...', { currentCluster: context.currentCluster });
+    const { messages, currentCluster = 'pain-point', sessionId = 'default' } = body;
+    const latestMessage = messages[messages.length - 1];
     
-    const enhancedSystemPrompt = ArenaPrompts.buildSystemPrompt({
-      currentCluster: context.currentCluster,
-      sessionId: context.sessionId,
-      messagesCount: context.messages.length,
-      clusterUpdate
+    console.log('Latest message:', { 
+      role: latestMessage?.role, 
+      contentLength: latestMessage?.content?.length 
     });
 
-    // Initialize Claude client
-    const claude = getClaudeClient();
-    if (!claude.isConfigured()) {
-      console.error('Claude not configured');
-      return NextResponse.json({ error: 'Anthropic API key not configured' }, { status: 500 });
+    // Simple confidence calculation
+    const messageLength = latestMessage?.content?.length || 0;
+    const confidenceIncrease = messageLength > 100 ? 25 : 15;
+    const currentConfidence = Math.min(100, confidenceIncrease);
+
+    // Simple cluster update
+    const clusterUpdate = {
+      clusterId: currentCluster,
+      updates: {
+        confidence: currentConfidence,
+        status: currentConfidence >= 75 ? 'complete' : 'in-progress'
+      }
+    };
+
+    // Simple AI response based on cluster
+    let aiResponse = "Jag förstår att du vill förbereda en rekrytering. ";
+    
+    switch (currentCluster) {
+      case 'pain-point':
+        aiResponse += "Låt oss börja med att förstå det verkliga problemet. Kan du beskriva vilken situation ni befinner er i just nu och vad som saknas?";
+        break;
+      case 'impact-urgency':
+        aiResponse += "Nu när vi förstår problemet, låt oss titta på påverkan. Vad händer om ni inte löser detta? Hur viktigt är det?";
+        break;
+      case 'success-check':
+        aiResponse += "Bra! Nu behöver vi definiera vad framgång betyder. Vilka konkreta mål ska den nya personen uppnå?";
+        break;
+      case 'resources':
+        aiResponse += "Utmärkt! Nu ska vi titta på resurser. Vad har ni för budget och kapacitet för denna rekrytering?";
+        break;
+      case 'org-reality':
+        aiResponse += "Perfekt! Nu behöver vi förstå er organisation. Vilken typ av person skulle passa bäst i er kultur?";
+        break;
+      case 'alternatives':
+        aiResponse += "Sista steget! Har ni övervägt andra lösningar än rekrytering? Varför är anställning rätt väg?";
+        break;
+      default:
+        aiResponse += "Låt oss fortsätta analysera er rekryteringsbehov. Berätta mer om situationen.";
     }
 
-    // Convert messages to Claude format
-    const claudeMessages = context.messages.map((msg: {role: string, content: string}) => ({
-      role: msg.role === 'system' ? 'assistant' : msg.role as 'user' | 'assistant',
-      content: msg.content
-    }));
-
-    console.log('Calling Claude API...');
-    
-    let response;
-    try {
-      response = await claude.chat(
-        claudeMessages,
-        enhancedSystemPrompt,
-        {
-          model: CLAUDE_MODEL,
-          maxTokens: Math.min(DEFAULT_MAX_TOKENS, 2000),
-          temperature: DEFAULT_TEMPERATURE
-        }
-      );
-    } catch (claudeError) {
-      console.error('Claude API error:', claudeError);
-      return NextResponse.json({ 
-        error: 'AI service temporarily unavailable',
-        details: claudeError instanceof Error ? claudeError.message : 'Unknown error'
-      }, { status: 500 });
-    }
-
-    const aiResponse = response.content || "Jag kunde inte generera ett svar. Försök igen.";
-    
-    // Simple response processing
-    const arenaResponse = {
+    const response = {
       message: aiResponse,
-      sessionId: context.sessionId,
+      sessionId,
       clusterUpdate,
       isComplete: false
     };
@@ -114,14 +75,14 @@ export async function POST(request: NextRequest) {
     console.log('Simple response created:', { 
       messageLength: aiResponse.length,
       hasClusterUpdate: !!clusterUpdate,
-      currentCluster: context.currentCluster
+      currentCluster 
     });
-    console.log('=== REFACTORED ARENA CHAT END ===');
+    console.log('=== SIMPLE ARENA CHAT END ===');
     
-    return NextResponse.json(arenaResponse);
+    return NextResponse.json(response);
 
   } catch (error) {
-    console.error('=== REFACTORED ARENA CHAT ERROR ===');
+    console.error('=== SIMPLE ARENA CHAT ERROR ===');
     console.error('Error:', error);
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
     
