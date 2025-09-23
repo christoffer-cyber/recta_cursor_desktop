@@ -420,6 +420,112 @@ export const RESOURCES_REQUIREMENTS: ClusterRequirements = {
   ]
 };
 
+// CLUSTER 5: ORGANIZATIONAL REALITY - Universal för alla roller och branscher
+export const ORGANIZATIONAL_REALITY_REQUIREMENTS: ClusterRequirements = {
+  name: "Organizational Reality",
+  description: "Bedöma kulturell beredskap och organisatorisk mognad",
+  minimumPoints: 3, // Minst 3 av 4 punkter
+  progressThreshold: 75, // 75% confidence för att gå vidare
+  requiredPoints: [
+    {
+      key: "cultural_fit",
+      description: "Kulturell passform - vilken typ av person fungerar/fungerar inte i organisationen?",
+      weight: 4,
+      keywords: [
+        "kultur", "passform", "passar", "fungerar", "inte fungerar", "typ av person",
+        "personlighet", "karaktär", "attityd", "stil", "approach", "mentalitet",
+        "entrepreneurisk", "hierarkisk", "formell", "informell", "snabba", "långsamma",
+        "beslut", "beslutsstil", "process", "flexibel", "strukturerad", "kreativ",
+        "startup", "corporate", "traditionell", "modern", "agil", "väletablerad"
+      ],
+      patterns: [
+        /typ av person.*fungerar|passar/i,
+        /kultur.*passform|passar.*inte/i,
+        /personlighet.*fungerar|karaktär.*passar/i,
+        /startup.*entrepreneurisk|agil.*mentalitet/i,
+        /corporate.*hierarkisk|formell.*struktur/i,
+        /snabba.*beslut.*vs.*långsamma/i,
+        /flexibel.*approach.*vs.*strukturerad/i,
+        /kreativ.*person.*vs.*processfokuserad/i,
+        /traditionell.*företag.*vs.*modern/i,
+        /väletablerad.*process.*vs.*agil/i
+      ]
+    },
+    {
+      key: "previous_recruitment_experience",
+      description: "Tidigare rekryteringserfarenheter - vad hände med senaste rekryteringen inom liknande roll?",
+      weight: 4,
+      keywords: [
+        "förra", "senaste", "tidigare", "rekrytering", "anställning", "rekryterade",
+        "slutade", "sade upp sig", "sparkade", "misslyckades", "lyckades", "fungerade",
+        "inte fungerade", "passade", "passade inte", "eftersom", "därför att",
+        "månader", "veckor", "år", "lång tid", "kort tid", "snart",
+        "liknande roll", "samma typ", "precis som", "ungefär samma"
+      ],
+      patterns: [
+        /förra.*slutade.*efter.*\d+.*månader/i,
+        /senaste.*rekrytering.*inte fungerade/i,
+        /tidigare.*anställning.*sparkade.*eftersom/i,
+        /förra.*person.*sade upp sig.*därför att/i,
+        /senaste.*rekrytering.*liknande roll/i,
+        /tidigare.*rekrytering.*passade inte/i,
+        /förra.*slutade.*snart.*eftersom/i,
+        /senaste.*anställning.*misslyckades/i,
+        /tidigare.*rekrytering.*samma typ/i,
+        /förra.*person.*inte passade/i
+      ]
+    },
+    {
+      key: "decision_styles_processes",
+      description: "Beslutsstilar och processer - hur fattas beslut, vem påverkar vem, hur hanteras konflikter?",
+      weight: 3,
+      keywords: [
+        "beslut", "beslutsprocess", "beslutsstil", "fattar beslut", "beslutsfattande",
+        "påverkar", "påverkan", "inflytande", "vetorätt", "röstning", "konsensus",
+        "konflikter", "konfliktlösning", "hantera", "lösa", "process",
+        "möten", "fredagsmöten", "veckomöten", "månadsmöten", "kvartalsmöten",
+        "hierarki", "chef", "manager", "ledning", "styrelse", "alla"
+      ],
+      patterns: [
+        /hur.*fattas.*beslut|beslutsprocess/i,
+        /vem.*påverkar.*vem|inflytande/i,
+        /konflikter.*hanteras|löses/i,
+        /fredagsmöten.*beslut|veckomöten/i,
+        /vetorätt|röstning.*konsensus/i,
+        /chef.*beslutar.*vs.*alla/i,
+        /hierarki.*beslut.*vs.*platt/i,
+        /ledning.*beslutar.*vs.*team/i,
+        /styrelse.*beslut.*vs.*management/i,
+        /process.*beslut.*vs.*ad hoc/i
+      ]
+    },
+    {
+      key: "organizational_maturity",
+      description: "Organisatorisk mognad - är företaget redo för denna typ av roll och ansvar?",
+      weight: 3,
+      keywords: [
+        "redo", "mogen", "mognad", "förberedd", "kan hantera", "klar för",
+        "denna typ", "sådan roll", "ansvar", "nivå", "komplexitet",
+        "startup", "växande", "etablerad", "mogen organisation", "ung",
+        "erfarenhet", "tidigare", "aldrig haft", "ny roll", "barnsjukdomar",
+        "struktur", "processer", "system", "verktyg", "resurser"
+      ],
+      patterns: [
+        /redo.*för.*denna.*typ.*roll/i,
+        /mogen.*för.*sådan.*ansvar/i,
+        /kan hantera.*denna.*komplexitet/i,
+        /startup.*växande.*vs.*etablerad/i,
+        /aldrig haft.*sådan.*roll/i,
+        /ny roll.*barnsjukdomar/i,
+        /struktur.*processer.*redo/i,
+        /system.*verktyg.*kan hantera/i,
+        /resurser.*klar för/i,
+        /erfarenhet.*tidigare.*roll/i
+      ]
+    }
+  ]
+};
+
 // Analysis Result Type
 export type InformationAnalysis = {
   clusterId: string;
@@ -557,6 +663,36 @@ export class InformationAnalyzer {
     };
   }
 
+  static analyzeOrganizationalReality(userMessage: string): InformationAnalysis {
+    const requirements = ORGANIZATIONAL_REALITY_REQUIREMENTS;
+    const foundPoints = requirements.requiredPoints.map(point => {
+      const found = this.checkForInformationPoint(userMessage, point);
+      return {
+        key: point.key,
+        found: found.found,
+        confidence: found.confidence,
+        extractedText: found.extractedText
+      };
+    });
+
+    const foundCount = foundPoints.filter(p => p.found).length;
+    const totalScore = Math.round((foundCount / requirements.requiredPoints.length) * 100);
+    const canProgress = foundCount >= requirements.minimumPoints && totalScore >= requirements.progressThreshold;
+    
+    const missingPoints = foundPoints
+      .filter(p => !p.found)
+      .map(p => requirements.requiredPoints.find(rp => rp.key === p.key)?.description || p.key);
+
+    return {
+      clusterId: 'org-reality',
+      foundPoints,
+      totalScore,
+      missingPoints,
+      canProgress,
+      nextQuestion: canProgress ? undefined : this.generateFollowUpQuestion(missingPoints[0] || '', 'org-reality')
+    };
+  }
+
   private static checkForInformationPoint(
     message: string, 
     point: InformationPoint
@@ -683,6 +819,28 @@ export class InformationAnalyzer {
           "Vad händer om kostnaden blir 20% högre än ni planerat?",
           "Om budgeten överskrids med 20%, vad gör ni då?",
           "Vad händer om den totala kostnaden blir dyrare än beräknat?"
+        ]
+      },
+      'org-reality': {
+        "Kulturell passform - vilken typ av person fungerar/fungerar inte i organisationen?": [
+          "Vilken typ av person fungerar bra i er organisation?",
+          "Vad kännetecknar personer som inte passat i er kultur?",
+          "Hur skulle ni beskriva den ideala personen för er miljö?"
+        ],
+        "Tidigare rekryteringserfarenheter - vad hände med senaste rekryteringen inom liknande roll?": [
+          "Vad hände med er senaste rekrytering till en liknande roll?",
+          "Berätta om er förra anställning inom detta område - vad gick bra/dåligt?",
+          "Hur länge stannade den förra personen och varför slutade de?"
+        ],
+        "Beslutsstilar och processer - hur fattas beslut, vem påverkar vem, hur hanteras konflikter?": [
+          "Hur fattas beslut i er organisation?",
+          "Vem påverkar vem i beslutsprocessen?",
+          "Hur hanterar ni konflikter och oenigheter?"
+        ],
+        "Organisatorisk mognad - är företaget redo för denna typ av roll och ansvar?": [
+          "Är er organisation redo för denna typ av roll?",
+          "Har ni tidigare erfarenhet av liknande ansvar?",
+          "Vad behöver ni för att kunna hantera denna roll effektivt?"
         ]
       }
     };

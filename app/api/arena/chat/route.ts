@@ -42,6 +42,12 @@ STEG 4 - RESOURCES: Leta efter dessa 4 punkter i användarens svar:
 3. Tillgängliga verktyg/system (vad finns redan vs vad behöver köpas/implementeras?)
 4. Budgetverklighet (vad händer om kostnaden blir 20% högre än planerat?)
 
+STEG 5 - ORGANIZATIONAL REALITY: Leta efter dessa 4 punkter i användarens svar:
+1. Kulturell passform (vilken typ av person fungerar/fungerar inte i organisationen?)
+2. Tidigare rekryteringserfarenheter (vad hände med senaste rekryteringen inom liknande roll?)
+3. Beslutsstilar och processer (hur fattas beslut, vem påverkar vem, hur hanteras konflikter?)
+4. Organisatorisk mognad (är företaget redo för denna typ av roll och ansvar?)
+
 Systemet går vidare till nästa steg först när minst 3 av 4 punkter är identifierade.
 
 Din mission:
@@ -168,6 +174,24 @@ export async function POST(request: NextRequest) {
           analysis = InformationAnalyzer.analyzeResources(latestUserMessage.content);
           
           console.log('Resources Analysis:', {
+            foundPoints: analysis.foundPoints.filter(p => p.found).map(p => p.key),
+            totalScore: analysis.totalScore,
+            canProgress: analysis.canProgress,
+            missingPoints: analysis.missingPoints
+          });
+          
+          // Set confidence based on information quality, not message length
+          newConfidence = analysis.totalScore;
+          
+          // Store next question for better follow-up
+          if (analysis.nextQuestion) {
+            console.log('Suggested next question:', analysis.nextQuestion);
+          }
+        } else if (currentCluster === 'org-reality') {
+          // Use intelligent analysis for Organizational Reality cluster
+          analysis = InformationAnalyzer.analyzeOrganizationalReality(latestUserMessage.content);
+          
+          console.log('Organizational Reality Analysis:', {
             foundPoints: analysis.foundPoints.filter(p => p.found).map(p => p.key),
             totalScore: analysis.totalScore,
             canProgress: analysis.canProgress,
