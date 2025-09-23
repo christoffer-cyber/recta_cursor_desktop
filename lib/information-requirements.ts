@@ -1,6 +1,8 @@
 // Information Requirements for Arena Clusters
 // Each cluster has specific information that needs to be extracted from user responses
 
+import { Message } from './types';
+
 export type InformationPoint = {
   key: string;
   description: string;
