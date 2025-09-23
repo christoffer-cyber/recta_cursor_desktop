@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getClaudeClient } from '../../../../lib/claude-client';
-import { ArenaLogicEngine, CLUSTER_PROMPTS, CLUSTER_DEFINITIONS } from '../../../../lib/arena-clusters';
-import { ClusterType, ArenaCluster } from '../../../../lib/types';
 import { CLAUDE_MODEL, DEFAULT_MAX_TOKENS, DEFAULT_TEMPERATURE } from '../../../../lib/ai-config';
 
 const SYSTEM_PROMPT = `Du är en expert på strategisk rekrytering och organisationsutveckling. Din uppgift är att hjälpa företag att förbereda sig optimalt innan de påbörjar en rekryteringsprocess.
@@ -43,7 +41,7 @@ Börja med att hälsa och fråga om företaget och den tänkta rollen.`;
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== ARENA CHAT WITH CLUSTERS START ===');
+    console.log('=== SAFE ARENA CHAT START ===');
     
     const body = await request.json();
     console.log('Request body received:', { 
@@ -62,39 +60,31 @@ export async function POST(request: NextRequest) {
     // Get latest user message
     const latestUserMessage = messages[messages.length - 1];
     
-    // CLUSTER LOGIC - STEP 1 RESTORATION
-    console.log('Starting cluster logic...', { 
+    // SAFE CLUSTER LOGIC - No complex imports
+    console.log('Starting safe cluster logic...', { 
       currentCluster, 
       hasClusters: !!clusters, 
       hasLatestMessage: !!latestUserMessage,
       latestUserMessageRole: latestUserMessage?.role
     });
     
-    let nextCluster = currentCluster;
+    const nextCluster = currentCluster;
     let clusterUpdate: { clusterId: string; updates: { confidence: number; status: string; lastUpdated: string } } | null = null;
     
+    // Simple cluster logic without ArenaLogicEngine
     if (currentCluster && clusters && latestUserMessage?.role === 'user') {
       try {
-        console.log('Calling ArenaLogicEngine.getNextCluster...', {
-          currentCluster: currentCluster as ClusterType,
-          clustersKeys: Object.keys(clusters),
-          messageContent: latestUserMessage.content?.substring(0, 100)
+        console.log('Processing cluster update...', {
+          currentCluster,
+          currentConfidence: clusters[currentCluster]?.confidence || 0,
+          clusterExists: !!clusters[currentCluster]
         });
         
-        nextCluster = ArenaLogicEngine.getNextCluster(
-          currentCluster as ClusterType,
-          clusters,
-          latestUserMessage.content,
-          [] // No triggers for now
-        );
-        
-        console.log('Cluster logic completed successfully:', { currentCluster, nextCluster });
-        
-        // Create cluster update
+        // Simple cluster update without complex logic
         clusterUpdate = {
           clusterId: currentCluster,
           updates: {
-            confidence: Math.min(100, (clusters[currentCluster]?.confidence || 0) + 10),
+            confidence: Math.min(100, (clusters[currentCluster]?.confidence || 0) + 15),
             status: 'in-progress' as const,
             lastUpdated: new Date().toISOString()
           }
@@ -105,32 +95,30 @@ export async function POST(request: NextRequest) {
       } catch (clusterError) {
         console.error('Cluster logic failed with error:', clusterError);
         console.error('Cluster error stack:', clusterError instanceof Error ? clusterError.stack : 'No stack');
-        nextCluster = currentCluster;
         clusterUpdate = null;
       }
     }
 
-    // SYSTEM PROMPT WITH CLUSTER LOGIC
-    console.log('Building system prompt with cluster logic...', { currentCluster });
+    // SIMPLE SYSTEM PROMPT WITH CLUSTER CONTEXT
+    console.log('Building system prompt with cluster context...', { currentCluster });
     
-    let clusterPrompt: string;
-    try {
-      clusterPrompt = currentCluster && CLUSTER_PROMPTS[currentCluster as ClusterType] 
-        ? CLUSTER_PROMPTS[currentCluster as ClusterType]
-        : SYSTEM_PROMPT;
-      console.log('Cluster prompt retrieved successfully');
-    } catch (promptError) {
-      console.error('Failed to get cluster prompt:', promptError);
-      clusterPrompt = SYSTEM_PROMPT;
-    }
-
     let enhancedSystemPrompt: string;
     try {
-      enhancedSystemPrompt = `${clusterPrompt}
+      const clusterNames = {
+        'pain-point': 'Problem & Pain Point',
+        'impact-urgency': 'Påverkan & Prioritering', 
+        'success-check': 'Framgång & Kriterier',
+        'resources': 'Resurser & Budget',
+        'org-reality': 'Organisation & Kultur',
+        'alternatives': 'Alternativ & Risker'
+      };
+      
+      const currentClusterName = clusterNames[currentCluster as keyof typeof clusterNames] || 'Start';
+      
+      enhancedSystemPrompt = `${SYSTEM_PROMPT}
 
 AKTUELL SESSION:
-- Nuvarande kluster: ${currentCluster || 'Ej startat'}
-${nextCluster && nextCluster !== currentCluster ? `- Nästa kluster: ${nextCluster}` : ''}
+- Nuvarande kluster: ${currentClusterName}
 - Session ID: ${sessionId || 'Ej tillgängligt'}
 - Totala meddelanden: ${messages.length}
 
@@ -141,7 +129,7 @@ KLUSTER UPPDATERING:
 - Status: ${clusterUpdate.updates.status}
 ` : ''}
 
-FOKUSERA på att samla information för nuvarande kluster: ${currentCluster || 'start'}.
+FOKUSERA på att samla information för nuvarande kluster: ${currentClusterName}.
 Använd samma engagerande stil som tidigare - läs mellan raderna, ställ utmanande frågor och hjälp användaren att reflektera.`;
       
       console.log('System prompt built successfully');
@@ -186,43 +174,25 @@ Använd samma engagerande stil som tidigare - läs mellan raderna, ställ utmana
 
     const aiResponse = response.content || "Jag kunde inte generera ett svar. Försök igen.";
     
-    // Check if analysis is complete using cluster logic
-    const analysisComplete = clusters && ArenaLogicEngine.isAnalysisComplete(clusters);
-    const isComplete = aiResponse.includes("ANALYS_KLAR") && analysisComplete;
-    
+    // Simple completion check
+    const isComplete = aiResponse.includes("ANALYS_KLAR");
     let finalMessage = aiResponse.replace("ANALYS_KLAR", "").trim();
     
-    // If AI tries to complete but clusters aren't ready, redirect
-    if (aiResponse.includes("ANALYS_KLAR") && !analysisComplete) {
-      const incompleteClusters = Object.entries(clusters || {})
-        .filter(([, cluster]) => (cluster as ArenaCluster).confidence < 70)
-        .map(([id]) => CLUSTER_DEFINITIONS[id as ClusterType]?.name)
-        .filter(Boolean);
-      
-      finalMessage = `Jag märker att vi har gjort bra framsteg, men för att ge dig den bästa möjliga analysen behöver vi utforska några områden djupare. Låt oss fortsätta med ${incompleteClusters[0] || 'nästa viktiga område'}.`;
-      
-      // Force continue the analysis
-      const nextIncompleteCluster = Object.entries(clusters || {})
-        .find(([, cluster]) => (cluster as ArenaCluster).confidence < 70)?.[0] as ClusterType;
-      
-      if (nextIncompleteCluster) {
-        nextCluster = nextIncompleteCluster;
-      }
-    } else if (isComplete && finalMessage.length < 10) {
+    if (isComplete && finalMessage.length < 10) {
       finalMessage = "Perfekt! Jag har nu tillräcklig information för att skapa en grundlig analys. Låt oss generera rapporten.";
     }
     
     console.log('Claude response processed:', { 
       length: finalMessage.length,
       isComplete,
-      analysisComplete,
-      nextCluster
+      nextCluster,
+      clusterUpdate: !!clusterUpdate
     });
-    console.log('=== ARENA CHAT WITH CLUSTERS END ===');
+    console.log('=== SAFE ARENA CHAT END ===');
     
     return NextResponse.json({
       message: finalMessage,
-      isComplete: isComplete || analysisComplete,
+      isComplete: isComplete,
       sessionId,
       // Cluster information
       clusterId: currentCluster,
@@ -232,7 +202,7 @@ Använd samma engagerande stil som tidigare - läs mellan raderna, ställ utmana
     });
 
   } catch (error) {
-    console.error('=== ARENA CHAT WITH CLUSTERS ERROR ===');
+    console.error('=== SAFE ARENA CHAT ERROR ===');
     console.error('Error:', error);
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
     
