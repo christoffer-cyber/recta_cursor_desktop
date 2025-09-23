@@ -463,7 +463,7 @@ export class InformationAnalyzer {
       totalScore,
       missingPoints,
       canProgress,
-      nextQuestion: canProgress ? undefined : this.generateFollowUpQuestion(missingPoints[0], 'pain-point')
+      nextQuestion: canProgress ? undefined : this.generateFollowUpQuestion(missingPoints[0] || '', 'pain-point')
     };
   }
 
@@ -493,7 +493,7 @@ export class InformationAnalyzer {
       totalScore,
       missingPoints,
       canProgress,
-      nextQuestion: canProgress ? undefined : this.generateFollowUpQuestion(missingPoints[0], 'impact-urgency')
+      nextQuestion: canProgress ? undefined : this.generateFollowUpQuestion(missingPoints[0] || '', 'impact-urgency')
     };
   }
 
@@ -523,7 +523,7 @@ export class InformationAnalyzer {
       totalScore,
       missingPoints,
       canProgress,
-      nextQuestion: canProgress ? undefined : this.generateFollowUpQuestion(missingPoints[0], 'success-check')
+      nextQuestion: canProgress ? undefined : this.generateFollowUpQuestion(missingPoints[0] || '', 'success-check')
     };
   }
 
@@ -553,7 +553,7 @@ export class InformationAnalyzer {
       totalScore,
       missingPoints,
       canProgress,
-      nextQuestion: canProgress ? undefined : this.generateFollowUpQuestion(missingPoints[0], 'resources')
+      nextQuestion: canProgress ? undefined : this.generateFollowUpQuestion(missingPoints[0] || '', 'resources')
     };
   }
 
