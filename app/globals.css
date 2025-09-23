@@ -231,6 +231,21 @@ p, li { color: #374151; line-height: 1.7; }
   font-family: var(--font-geist-sans), 'Inter', sans-serif;
 }
 
+.arena-main-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 40% 60%;
+  gap: 0;
+  min-height: 0;
+}
+
+@media (max-width: 768px) {
+  .arena-main-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+}
+
 /* Cluster Steps Topbar */
 .cluster-topbar {
   background: linear-gradient(135deg, hsl(var(--consulting-navy)), hsl(var(--consulting-blue)));
