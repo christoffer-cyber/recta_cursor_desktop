@@ -30,30 +30,31 @@ export async function POST(request: NextRequest) {
       hasClusters: !!context.clusters
     });
     
-    // Process cluster analysis using ArenaEngine
+    // Simplified cluster analysis for now
     let clusterUpdate = null;
     if (context.currentCluster && context.clusters && context.latestUserMessage?.role === 'user') {
-      console.log('Starting cluster analysis...', { 
+      console.log('Processing simple cluster update...', { 
         currentCluster: context.currentCluster, 
         hasClusters: !!context.clusters, 
         hasLatestMessage: !!context.latestUserMessage,
         latestUserMessageRole: context.latestUserMessage?.role
       });
 
-      const arenaContext: ArenaContext = {
-        currentCluster: context.currentCluster,
-        clusters: context.clusters,
-        latestUserMessage: context.latestUserMessage,
-        sessionId: context.sessionId,
-        messagesCount: context.messages.length
-      };
+      // Simple confidence increase based on message length
+      const messageLength = context.latestUserMessage.content.length;
+      const currentConfidence = context.clusters[context.currentCluster]?.confidence || 0;
+      const confidenceIncrease = messageLength > 100 ? 25 : 15;
+      const newConfidence = Math.min(100, currentConfidence + confidenceIncrease);
 
-      const analysis = ArenaEngine.analyzeClusterProgress(arenaContext);
+      clusterUpdate = {
+        clusterId: context.currentCluster,
+        updates: {
+          confidence: newConfidence,
+          status: newConfidence >= 75 ? 'complete' : 'in-progress'
+        }
+      };
       
-      if (analysis) {
-        clusterUpdate = ArenaEngine.createClusterUpdate(context.currentCluster, analysis.newConfidence);
-        console.log('Cluster update created:', clusterUpdate);
-      }
+      console.log('Simple cluster update created:', clusterUpdate);
     }
 
     // Build system prompt using ArenaPrompts
@@ -102,16 +103,19 @@ export async function POST(request: NextRequest) {
 
     const aiResponse = response.content || "Jag kunde inte generera ett svar. Försök igen.";
     
-    // Process response using ArenaResponseHandler
-    const arenaResponse = ArenaResponseHandler.processAIResponse(aiResponse, {
+    // Simple response processing
+    const arenaResponse = {
+      message: aiResponse,
       sessionId: context.sessionId,
-      currentCluster: context.currentCluster,
       clusterUpdate,
-      clusters: context.clusters
-    });
+      isComplete: false
+    };
 
-    // Log response info
-    ArenaResponseHandler.logResponseInfo(arenaResponse);
+    console.log('Simple response created:', { 
+      messageLength: aiResponse.length,
+      hasClusterUpdate: !!clusterUpdate,
+      currentCluster: context.currentCluster
+    });
     console.log('=== REFACTORED ARENA CHAT END ===');
     
     return NextResponse.json(arenaResponse);

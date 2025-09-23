@@ -39,7 +39,7 @@ export default function ArenaChat({ sessionId, onComplete }: ArenaChatProps) {
   const [overallConfidence, setOverallConfidence] = useState(0);
   
   // Step modal state
-  const [stepModalState, setStepModalState] = useState<StepModalState>('introduction');
+  const [stepModalState, setStepModalState] = useState<StepModalState>(null);
   const [previousCluster, setPreviousCluster] = useState<ClusterType | null>(null);
   const [clusterAnalysis, setClusterAnalysis] = useState<{
     foundPoints: string[];
@@ -64,8 +64,6 @@ export default function ArenaChat({ sessionId, onComplete }: ArenaChatProps) {
     if (storedCompanyName) {
       setCompanyName(storedCompanyName);
       setCurrentStep('conversation');
-      // Show introduction for first cluster
-      setStepModalState('introduction');
     }
   }, []);
 
@@ -214,9 +212,8 @@ export default function ArenaChat({ sessionId, onComplete }: ArenaChatProps) {
       sessionStorage.setItem('setupCompanyName', companyName);
     }
     setCurrentStep('conversation');
-    setStepModalState('introduction');
     
-    // Start with first message after introduction
+    // Start with first message
     const firstMessage = "Hej! Jag vill förbereda en rekrytering.";
     handleSendMessage(firstMessage);
   };
