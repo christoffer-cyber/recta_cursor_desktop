@@ -157,37 +157,63 @@ export async function POST(request: NextRequest) {
     //   }
     // }
 
-    // CONTRADICTION DETECTION - RE-ENABLED FOR TESTING
-    console.log('Starting contradiction detection...');
+    // CONTRADICTION DETECTION - RE-ENABLED FOR TESTING WITH DETAILED LOGGING
+    console.log('Starting contradiction detection...', { 
+      messagesCount: messages.length,
+      messagesTypes: messages.map(m => m.role),
+      latestMessage: messages[messages.length - 1]?.content?.substring(0, 100)
+    });
     let contradictions: string[] = [];
     try {
+      console.log('Calling ArenaLogicEngine.detectContradictions...');
       contradictions = ArenaLogicEngine.detectContradictions(messages);
-      console.log('Contradiction detection completed:', contradictions);
+      console.log('Contradiction detection completed successfully:', { 
+        contradictionsCount: contradictions.length,
+        contradictions: contradictions
+      });
     } catch (contradictionError) {
-      console.error('Contradiction detection failed:', contradictionError);
+      console.error('Contradiction detection failed with error:', contradictionError);
+      console.error('Error stack:', contradictionError instanceof Error ? contradictionError.stack : 'No stack');
       contradictions = [];
     }
     
-    // CLUSTER LOGIC - RE-ENABLED FOR TESTING
-    console.log('Starting cluster logic...', { currentCluster, hasClusters: !!clusters, hasLatestMessage: !!latestUserMessage });
+    // CLUSTER LOGIC - RE-ENABLED FOR TESTING WITH DETAILED LOGGING
+    console.log('Starting cluster logic...', { 
+      currentCluster, 
+      hasClusters: !!clusters, 
+      hasLatestMessage: !!latestUserMessage,
+      latestUserMessageRole: latestUserMessage?.role,
+      latestUserMessageContent: latestUserMessage?.content?.substring(0, 100)
+    });
     let nextCluster = currentCluster;
     let clusterUpdate: { clusterId: string; updates: { confidence: number; status: string; lastUpdated: string } } | null = null;
     
     if (currentCluster && clusters && latestUserMessage?.role === 'user') {
       try {
+        console.log('Calling ArenaLogicEngine.getNextCluster...', {
+          currentCluster: currentCluster as ClusterType,
+          clustersKeys: Object.keys(clusters),
+          messageContent: latestUserMessage.content
+        });
         nextCluster = ArenaLogicEngine.getNextCluster(
           currentCluster as ClusterType,
           clusters,
           latestUserMessage.content,
           [] // No triggers for now
         );
-        console.log('Cluster logic completed:', { currentCluster, nextCluster });
+        console.log('Cluster logic completed successfully:', { currentCluster, nextCluster });
       } catch (clusterError) {
-        console.error('Cluster logic failed:', clusterError);
+        console.error('Cluster logic failed with error:', clusterError);
+        console.error('Cluster error stack:', clusterError instanceof Error ? clusterError.stack : 'No stack');
         nextCluster = currentCluster;
       }
       
       try {
+        console.log('Creating cluster update...', {
+          currentCluster,
+          currentConfidence: clusters[currentCluster]?.confidence || 0,
+          clusterExists: !!clusters[currentCluster]
+        });
         // Create cluster update
         clusterUpdate = {
           clusterId: currentCluster,
@@ -197,9 +223,10 @@ export async function POST(request: NextRequest) {
             lastUpdated: new Date().toISOString()
           }
         };
-        console.log('Cluster update created:', clusterUpdate);
+        console.log('Cluster update created successfully:', clusterUpdate);
       } catch (updateError) {
-        console.error('Cluster update failed:', updateError);
+        console.error('Cluster update failed with error:', updateError);
+        console.error('Update error stack:', updateError instanceof Error ? updateError.stack : 'No stack');
         clusterUpdate = null;
       }
     }
