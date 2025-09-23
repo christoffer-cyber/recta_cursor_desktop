@@ -71,7 +71,7 @@ jobs:
 
       - name: Deploy with Vercel (preview)
         id: vercel
-        uses: amondnet/vercel-action@v25
+        uses: vercel/action@v1
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
