@@ -5,3 +5,5 @@ export const OPENAI_EMBEDDING_MODEL = process.env.OPENAI_EMBEDDING_MODEL || 'tex
 
 export const AI_REQUEST_TIMEOUT_MS = Number(process.env.AI_REQUEST_TIMEOUT_MS || 8000);
 
+// Clean deployment trigger after removing .vercel cache
+
