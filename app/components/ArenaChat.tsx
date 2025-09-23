@@ -13,7 +13,7 @@ interface ArenaChatProps {
   onComplete: (messages: Message[]) => void;
 }
 
-type FlowStep = 'setup' | 'conversation' | 'extracting' | 'preview' | 'generating' | 'complete';
+type FlowStep = 'conversation' | 'extracting' | 'preview' | 'generating' | 'complete';
 type StepModalState = 'introduction' | 'completion' | 'transition' | null;
 
 export default function ArenaChat({ sessionId, onComplete }: ArenaChatProps) {
@@ -21,8 +21,7 @@ export default function ArenaChat({ sessionId, onComplete }: ArenaChatProps) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
-  const [currentStep, setCurrentStep] = useState<FlowStep>('setup');
-  const [companyName, setCompanyName] = useState('');
+  const [currentStep, setCurrentStep] = useState<FlowStep>('conversation');
   
   // Cluster-based state
   const [currentCluster, setCurrentCluster] = useState<ClusterType>('pain-point');
@@ -58,12 +57,11 @@ export default function ArenaChat({ sessionId, onComplete }: ArenaChatProps) {
     scrollToBottom();
   }, [messages]);
 
+  // Start conversation immediately
   useEffect(() => {
-    // Check if we have stored company data from a previous session
-    const storedCompanyName = sessionStorage.getItem('setupCompanyName');
-    if (storedCompanyName) {
-      setCompanyName(storedCompanyName);
-      setCurrentStep('conversation');
+    if (messages.length === 0) {
+      const firstMessage = "Hej! Jag vill förbereda en rekrytering.";
+      handleSendMessage(firstMessage);
     }
   }, []);
 
@@ -163,7 +161,7 @@ export default function ArenaChat({ sessionId, onComplete }: ArenaChatProps) {
       }
       
       // Check if current cluster is complete and show completion modal
-      if (clusterAnalysis && clusterAnalysis.confidence >= 75) {
+      if (clusterAnalysis && clusterAnalysis.confidence >= 75 && !stepModalState) {
         setStepModalState('completion');
       }
       
@@ -207,29 +205,6 @@ export default function ArenaChat({ sessionId, onComplete }: ArenaChatProps) {
     }
   };
 
-  const handleStartConversation = () => {
-    if (companyName) {
-      sessionStorage.setItem('setupCompanyName', companyName);
-    }
-    setCurrentStep('conversation');
-    
-    // Start with first message
-    const firstMessage = "Hej! Jag vill förbereda en rekrytering.";
-    handleSendMessage(firstMessage);
-  };
-
-  const handleCompanyLookup = async () => {
-    if (!companyName.trim()) return;
-    setIsLoading(true);
-    try {
-      console.log(`🔍 Looking up company: ${companyName}`);
-      // Company lookup logic would go here
-    } catch (error) {
-      console.error('Company lookup error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div style={ComponentTokens.chatContainer}>
@@ -282,64 +257,6 @@ export default function ArenaChat({ sessionId, onComplete }: ArenaChatProps) {
           isVisible={true}
           onComplete={handleStepTransitionComplete}
         />
-      )}
-
-      {currentStep === 'setup' && (
-        <div className="arena-setup">
-          <div className="setup-content">
-            <h2 className="setup-title">Företagsregistrering</h2>
-            <p className="setup-description">
-              Ange ditt företagsnamn så hämtar vi automatiskt relevant branschdata och företagsinformation för en mer personlig analys.
-            </p>
-            
-            <div className="setup-form">
-              <div className="form-group">
-                <label htmlFor="companyName" className="form-label">
-                  Företagsnamn
-                </label>
-                <input
-                  id="companyName"
-                  type="text"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="t.ex. GLAS Scandinavia AB"
-                  style={ComponentTokens.input}
-                  onKeyPress={(e) => e.key === 'Enter' && handleCompanyLookup()}
-                  disabled={isLoading}
-                />
-                <p className="form-help">
-                  Ange det fullständiga företagsnamnet inklusive AB, Ltd, Inc, etc.
-                </p>
-              </div>
-
-              <div className="form-actions">
-                <button
-                  onClick={handleCompanyLookup}
-                  disabled={!companyName.trim() || isLoading}
-                  style={{
-                    ...ComponentTokens.button.primary,
-                    opacity: (!companyName.trim() || isLoading) ? 0.6 : 1,
-                    cursor: (!companyName.trim() || isLoading) ? 'not-allowed' : 'pointer',
-                  }}
-                >
-                  {isLoading ? 'Hämtar företagsdata...' : 'Hämta företagsdata'}
-                </button>
-                
-                <button
-                  onClick={handleStartConversation}
-                  style={{
-                    ...ComponentTokens.button.secondary,
-                    opacity: isLoading ? 0.6 : 1,
-                    cursor: isLoading ? 'not-allowed' : 'pointer',
-                  }}
-                  disabled={isLoading}
-                >
-                  Hoppa över
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
       )}
 
       {currentStep === 'conversation' && (

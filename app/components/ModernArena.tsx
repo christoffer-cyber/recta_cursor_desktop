@@ -8,14 +8,13 @@ import ArenaChat from "./ArenaChat";
 import ModernClusterTopbar from "./ModernClusterTopbar";
 import ModernArenaCanvas from "./ModernArenaCanvas";
 
-type FlowStep = 'setup' | 'conversation' | 'extracting' | 'preview' | 'generating' | 'complete';
+type FlowStep = 'conversation' | 'extracting' | 'preview' | 'generating' | 'complete';
 
 export default function ModernArena() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isComplete, setIsComplete] = useState(false);
-  const [currentStep, setCurrentStep] = useState<FlowStep>('setup');
+  const [currentStep, setCurrentStep] = useState<FlowStep>('conversation');
   const [sessionId] = useState(() => `arena_session_${Date.now()}`);
-  const [companyName, setCompanyName] = useState('');
   
   // Cluster-based state
   const [currentCluster, setCurrentCluster] = useState<ClusterType>('pain-point');
@@ -24,14 +23,6 @@ export default function ModernArena() {
   );
   const [overallConfidence, setOverallConfidence] = useState(0);
 
-  useEffect(() => {
-    // Check if we have stored company data from a previous session
-    const storedCompanyName = sessionStorage.getItem('setupCompanyName');
-    if (storedCompanyName) {
-      setCompanyName(storedCompanyName);
-      setCurrentStep('conversation');
-    }
-  }, []);
 
   const handleChatComplete = (completedMessages: Message[]) => {
     setMessages(completedMessages);
@@ -51,7 +42,6 @@ export default function ModernArena() {
       // Store session data in localStorage for report page
       localStorage.setItem(`arena_session_${sessionId}`, JSON.stringify({
         messages,
-        companyName,
         clusters,
         overallConfidence,
         timestamp: new Date().toISOString(),
@@ -175,14 +165,12 @@ export default function ModernArena() {
         </p>
       </div>
 
-      {/* Cluster Progress Topbar (only during conversation) */}
-      {currentStep === 'conversation' && (
-        <ModernClusterTopbar
-          clusters={clusters}
-          currentCluster={currentCluster}
-          overallConfidence={overallConfidence}
-        />
-      )}
+      {/* Cluster Progress Topbar - Always visible to show 6-step overview */}
+      <ModernClusterTopbar
+        clusters={clusters}
+        currentCluster={currentCluster}
+        overallConfidence={overallConfidence}
+      />
 
       {/* Main Content */}
       <div className="arena-main-grid">
@@ -209,14 +197,13 @@ export default function ModernArena() {
         }}>
           {(currentStep === 'extracting' || currentStep === 'generating') && renderProcessingView()}
           {currentStep === 'complete' && renderCompleteView()}
-          {(currentStep === 'setup' || currentStep === 'conversation') && (
+          {currentStep === 'conversation' && (
             <ModernArenaCanvas
               currentStep={currentStep}
               currentCluster={currentCluster}
               clusters={clusters}
               overallConfidence={overallConfidence}
               messages={messages}
-              companyName={companyName}
             />
           )}
         </div>

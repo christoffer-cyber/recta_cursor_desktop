@@ -10,7 +10,6 @@ interface ModernArenaCanvasProps {
   clusters: Record<ClusterType, ArenaCluster>;
   overallConfidence: number;
   messages: Message[];
-  companyName: string;
 }
 
 const CLUSTER_NAMES: Record<ClusterType, string> = {
@@ -31,13 +30,12 @@ const CLUSTER_DESCRIPTIONS: Record<ClusterType, string> = {
   'alternatives': 'Utmana rekrytering som bästa lösning'
 };
 
-export default function ModernArenaCanvas({
-  currentStep,
-  currentCluster,
-  clusters,
-  overallConfidence,
-  messages,
-  companyName
+export default function ModernArenaCanvas({ 
+  currentStep, 
+  currentCluster, 
+  clusters, 
+  overallConfidence, 
+  messages 
 }: ModernArenaCanvasProps) {
   
   const getClusterProgress = () => {
@@ -214,7 +212,7 @@ export default function ModernArenaCanvas({
               padding: `${DesignSystem.spacing[1]} ${DesignSystem.spacing[2]}`,
               borderRadius: DesignSystem.borderRadius.md,
             }}>
-              {companyName || 'Företag'}
+              Rekryteringsanalys
             </span>
           </h2>
           <p style={{
