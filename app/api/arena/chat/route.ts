@@ -45,13 +45,19 @@ Viktiga områden att täcka:
 Börja med att hälsa och fråga om företaget och den tänkta rollen.`;
 
 export async function POST(request: NextRequest) {
+  const sessionStartTime = Date.now();
+  
   try {
     const body = await request.json();
+    console.log('=== ARENA CHAT SESSION START ===');
+    console.log('Session timestamp:', new Date().toISOString());
     console.log('Chat API request received:', { 
       messagesCount: body.messages?.length || 0,
       hasCurrentCluster: !!body.currentCluster,
-      hasClusters: !!body.clusters
+      hasClusters: !!body.clusters,
+      sessionId: body.sessionId
     });
+    
     const Schema = z.object({
       messages: z.array(z.object({ role: z.enum(['user','assistant','system']), content: z.string() })).min(1),
       sessionId: z.string().optional(),
@@ -86,38 +92,6 @@ export async function POST(request: NextRequest) {
     // 🤖 Company Intelligence Agent - TEMPORARILY DISABLED FOR DEBUGGING
     console.log('Company Intelligence Agent temporarily disabled for debugging');
     
-    // if (latestUserMessage && latestUserMessage.role === 'user') {
-    //   try {
-    //     const detectedCompany = detectCompanyName(latestUserMessage.content);
-    //     if (detectedCompany) {
-    //       console.log(`🏢 Company detected: ${detectedCompany} - triggering background intelligence gathering`);
-    //       
-    //       // Trigger background company intelligence (don't await - let it run in background)
-    //       try {
-    //         const companyAgent = new CompanyIntelligenceAgent();
-    //         companyAgent.gatherCompanyIntelligence(detectedCompany)
-    //           .then(companyData => {
-    //             if (companyData) {
-    //               console.log(`✅ Company intelligence completed for ${detectedCompany}:`, {
-    //                 revenue: companyData.financial.revenue,
-    //                 employees: companyData.financial.employees,
-    //                 industry: companyData.industry
-    //               });
-    //               // TODO: Store this data for later use in report generation
-    //             }
-    //           })
-    //           .catch(error => {
-    //             console.error(`❌ Company intelligence failed for ${detectedCompany}:`, error);
-    //           });
-    //       } catch (agentError) {
-    //         console.error('❌ Failed to create CompanyIntelligenceAgent:', agentError);
-    //       }
-    //     }
-    //   } catch (detectionError) {
-    //     console.error('❌ Company name detection failed:', detectionError);
-    //   }
-    // }
-
     // Debug logging
     console.log('RAG enhancement check:', {
       hasLatestMessage: !!latestUserMessage,
@@ -128,41 +102,6 @@ export async function POST(request: NextRequest) {
 
     // RAG SYSTEM - TEMPORARILY DISABLED FOR DEBUGGING
     console.log('RAG system temporarily disabled for debugging');
-    
-    // // Optimize RAG: Only try if already initialized, don't wait for initialization
-    // if (latestUserMessage && latestUserMessage.role === 'user' && isRagSystemInitialized()) {
-    //   try {
-    //     const rag = getGlobalRagSystem();
-    //     if (rag) {
-    //       // Set timeout for RAG query to avoid blocking
-    //       const ragPromise = rag.query({
-    //         question: latestUserMessage.content,
-    //         context: {
-    //           industry: extractedData?.industry,
-    //           role: extractedData?.roleTitle,
-    //           companySize: extractedData?.companySize,
-    //           stage: extractedData?.stage
-    //         }
-    //       });
-
-    //       // Race between RAG response and timeout
-    //       const ragResponse = await Promise.race([
-    //         ragPromise,
-    //         new Promise<never>((_, reject) => 
-    //           setTimeout(() => reject(new Error('RAG timeout')), 3000)
-    //         )
-    //       ]);
-
-    //       if (ragResponse.confidence > 0.3) {
-    //         ragEnhancement = ragResponse.answer;
-    //         ragSources = ragResponse.sources.map(s => s.metadata.source);
-    //         console.log('RAG enhancement applied with confidence:', ragResponse.confidence);
-    //       }
-    //     }
-    //   } catch (ragError) {
-    //     console.log('RAG enhancement skipped (timeout/error):', ragError instanceof Error ? ragError.message : 'Unknown error');
-    //   }
-    // }
 
     // CONTRADICTION DETECTION - RE-ENABLED FOR TESTING WITH DETAILED LOGGING
     console.log('Starting contradiction detection...', { 
@@ -341,6 +280,57 @@ Använd samma engagerande stil som tidigare - läs mellan raderna, ställ utmana
       finalMessage = "Perfekt! Jag har nu tillräcklig information för att skapa en grundlig analys. Låt oss generera rapporten.";
     }
     
+    // AUTOMATIC SESSION LOGGING
+    const sessionDuration = Date.now() - sessionStartTime;
+    console.log('=== SESSION COMPLETION DATA ===');
+    console.log('Session duration (ms):', sessionDuration);
+    console.log('Total messages in session:', messages.length);
+    console.log('AI response length:', finalMessage.length);
+    console.log('Is analysis complete:', isComplete);
+    console.log('Analysis complete status:', analysisComplete);
+    console.log('Cluster update:', clusterUpdate);
+    console.log('Next cluster:', nextCluster);
+    console.log('Contradictions found:', contradictions.length);
+    console.log('=== ARENA CHAT SESSION END ===');
+    
+    // Save session data to file system
+    try {
+      if (sessionId) {
+        const sessionData = {
+          session_id: sessionId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          current_cluster: currentCluster,
+          clusters_data: clusters,
+          messages: messages,
+          messages_count: messages.length,
+          is_complete: isComplete || analysisComplete,
+          duration: sessionDuration,
+          last_message: finalMessage,
+          contradictions_found: contradictions,
+          overall_confidence: overallConfidence || 0,
+          cluster_update: clusterUpdate,
+          next_cluster: nextCluster
+        };
+
+        // Save to sessions API
+        await fetch(`${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'}/api/admin/sessions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            sessionId,
+            sessionData
+          })
+        });
+
+        console.log('Session data saved successfully');
+      }
+    } catch (dbError) {
+      console.error('Failed to save session data:', dbError);
+    }
+    
     return NextResponse.json({
       message: finalMessage,
       isComplete: isComplete || analysisComplete,
@@ -355,6 +345,11 @@ Använd samma engagerande stil som tidigare - läs mellan raderna, ställ utmana
     });
 
   } catch (error) {
+    const sessionDuration = Date.now() - sessionStartTime;
+    console.error('=== SESSION ERROR ===');
+    console.error('Session duration (ms):', sessionDuration);
+    console.error('Error:', error);
+    
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Invalid request', details: error.flatten() }, { status: 400 });
     }
