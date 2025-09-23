@@ -83,11 +83,24 @@ export async function POST(request: NextRequest) {
           clusterExists: !!clusters[currentCluster]
         });
         
-        // Simple cluster update without complex logic
+        // Smart cluster update - analyze message quality and length
+        const currentConfidence = clusters[currentCluster]?.confidence || 0;
+        const messageLength = latestUserMessage.content.length;
+        const hasQuestion = latestUserMessage.content.includes('?');
+        const hasDetails = latestUserMessage.content.length > 100;
+        
+        // Base confidence increase
+        let confidenceIncrease = 20; // Base increase
+        
+        // Bonus for detailed responses
+        if (hasDetails) confidenceIncrease += 10;
+        if (hasQuestion) confidenceIncrease += 5;
+        if (messageLength > 200) confidenceIncrease += 10;
+        
         clusterUpdate = {
           clusterId: currentCluster,
           updates: {
-            confidence: Math.min(100, (clusters[currentCluster]?.confidence || 0) + 15),
+            confidence: Math.min(100, currentConfidence + confidenceIncrease),
             status: 'in-progress' as const,
             lastUpdated: new Date().toISOString()
           }
