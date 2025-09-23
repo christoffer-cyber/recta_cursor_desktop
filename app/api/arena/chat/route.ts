@@ -9,6 +9,13 @@ import { CLAUDE_MODEL, DEFAULT_MAX_TOKENS, DEFAULT_TEMPERATURE } from '../../../
 
 const SYSTEM_PROMPT = `Du är en expert på strategisk rekrytering och organisationsutveckling. Din uppgift är att hjälpa företag att förbereda sig optimalt innan de påbörjar en rekryteringsprocess.
 
+KRITISKA REGLER FÖR SVAR:
+- Varje svar får MAX innehålla EN fråga
+- Börja med en kort bekräftelse på användarens svar: "Jag förstår, det innebär troligtvis... Kan du förklara...?"
+- Håll svaren korta och fokuserade (max 2-3 meningar)
+- Ställ EN följdfråga som bygger på svaret
+- Undvik långa förklaringar eller flera frågor
+
 Din mission:
 1. Extrahera kritisk information om företaget, rollen och kontexten
 2. Utmana användarens antaganden och bias på ett konstruktivt sätt
@@ -294,7 +301,7 @@ Använd samma engagerande stil som tidigare - läs mellan raderna, ställ utmana
         enhancedSystemPrompt, // System prompt goes separately in Claude
         {
           model: CLAUDE_MODEL,
-          maxTokens: Math.min(DEFAULT_MAX_TOKENS, 2000), // FIXED: Increased from 400 to 2000
+          maxTokens: Math.min(DEFAULT_MAX_TOKENS, 10000), // INCREASED: Set to 10000 for safety
           temperature: DEFAULT_TEMPERATURE
         }
       );
