@@ -24,6 +24,12 @@ STEG 1 - PAIN POINT: Leta efter dessa 4 punkter i användarens svar:
 3. Omfattning (hur ofta/stort är problemet?)
 4. Vem påverkas (vilka märker av problemet?)
 
+STEG 2 - IMPACT & URGENCY: Leta efter dessa 4 punkter i användarens svar:
+1. Tidsaspekt (vad händer om vi väntar 3/6/12 månader?)
+2. Affärskonsekvenser (vilken påverkan får det på verksamheten/resultatet?)
+3. Pressgrupper (vem bryr sig om att detta löses? chef, kunder, styrelse, team)
+4. Prioritering (hur viktigt är detta jämfört med andra saker företaget gör?)
+
 Systemet går vidare till nästa steg först när minst 3 av 4 punkter är identifierade.
 
 Din mission:
@@ -96,6 +102,24 @@ export async function POST(request: NextRequest) {
           analysis = InformationAnalyzer.analyzePainPoint(latestUserMessage.content);
           
           console.log('Pain Point Analysis:', {
+            foundPoints: analysis.foundPoints.filter(p => p.found).map(p => p.key),
+            totalScore: analysis.totalScore,
+            canProgress: analysis.canProgress,
+            missingPoints: analysis.missingPoints
+          });
+          
+          // Set confidence based on information quality, not message length
+          newConfidence = analysis.totalScore;
+          
+          // Store next question for better follow-up
+          if (analysis.nextQuestion) {
+            console.log('Suggested next question:', analysis.nextQuestion);
+          }
+        } else if (currentCluster === 'impact-urgency') {
+          // Use intelligent analysis for Impact & Urgency cluster
+          analysis = InformationAnalyzer.analyzeImpactUrgency(latestUserMessage.content);
+          
+          console.log('Impact & Urgency Analysis:', {
             foundPoints: analysis.foundPoints.filter(p => p.found).map(p => p.key),
             totalScore: analysis.totalScore,
             canProgress: analysis.canProgress,

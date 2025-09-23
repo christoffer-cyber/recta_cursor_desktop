@@ -107,6 +107,106 @@ export const PAIN_POINT_REQUIREMENTS: ClusterRequirements = {
   ]
 };
 
+// CLUSTER 2: IMPACT & URGENCY - Universal för alla roller och branscher
+export const IMPACT_URGENCY_REQUIREMENTS: ClusterRequirements = {
+  name: "Impact & Urgency",
+  description: "Förstå affärskonsekvenser och tidspress",
+  minimumPoints: 3, // Minst 3 av 4 punkter
+  progressThreshold: 75, // 75% confidence för att gå vidare
+  requiredPoints: [
+    {
+      key: "time_aspect",
+      description: "Tidsaspekt - vad händer om vi väntar 3/6/12 månader?",
+      weight: 4,
+      keywords: [
+        "månader", "veckor", "dagar", "tid", "deadline", "frist", "senast", "innan",
+        "Q1", "Q2", "Q3", "Q4", "kvartal", "år", "årsskifte", "budgetår",
+        "om vi väntar", "senare", "fördröjning", "försening", "akut", "bråttom"
+      ],
+      patterns: [
+        /om vi väntar.*månader|veckor|dagar/i,
+        /innan.*Q[1-4]|kvartal/i,
+        /senast.*januari|februari|mars|april|maj|juni|juli|augusti|september|oktober|november|december/i,
+        /deadline.*är/i,
+        /frist.*för/i,
+        /akut.*behov/i,
+        /bråttom.*med/i,
+        /fördröjning.*kostar/i,
+        /försening.*leder/i,
+        /\d+.*månader.*senare/i
+      ]
+    },
+    {
+      key: "business_consequences",
+      description: "Affärskonsekvenser - vilken påverkan får det på verksamheten/resultatet?",
+      weight: 4,
+      keywords: [
+        "kundkontrakt", "försäljning", "intäkter", "resultat", "vinst", "förlust",
+        "marknadsandel", "konkurrens", "reputation", "image", "tillväxt",
+        "expansion", "nedläggning", "omstrukturering", "redundans", "kris",
+        "miljoner", "tusen", "kr", "kronor", "procent", "%", "MSEK", "SEK"
+      ],
+      patterns: [
+        /förlorar.*kundkontrakt|kunder|försäljning/i,
+        /kostar.*miljoner|tusen|kr|kronor/i,
+        /påverkar.*resultat|vinst|intäkter/i,
+        /tappar.*marknadsandel|konkurrens/i,
+        /skadar.*reputation|image/i,
+        /förhindrar.*tillväxt|expansion/i,
+        /riskerar.*nedläggning|kris/i,
+        /\d+.*MSEK|\d+.*miljoner/i,
+        /påverkar.*verksamheten/i
+      ]
+    },
+    {
+      key: "pressure_groups",
+      description: "Pressgrupper - vem bryr sig om att detta löses? (chef, kunder, styrelse, team)",
+      weight: 3,
+      keywords: [
+        "chef", "chefer", "ledning", "styrelse", "VD", "direktör", "manager",
+        "kunder", "klienter", "användare", "team", "medarbetare", "personal",
+        "leverantörer", "partners", "investorer", "aktieägare", "myndigheter",
+        "frågar", "kräver", "hotar", "pressar", "orolig", "bekymrad", "frustrerad"
+      ],
+      patterns: [
+        /chef.*frågar|kräver|hotar/i,
+        /styrelse.*orolig|bekymrad/i,
+        /kunder.*klagar|hotar.*att/i,
+        /ledning.*pressar|kräver/i,
+        /team.*frustrerat|oroligt/i,
+        /investorer.*vill.*se/i,
+        /myndigheter.*kräver/i,
+        /aktieägare.*oroliga/i,
+        /leverantörer.*hotar/i,
+        /partners.*vill.*avsluta/i
+      ]
+    },
+    {
+      key: "prioritization",
+      description: "Prioritering - hur viktigt är detta jämfört med andra saker företaget gör?",
+      weight: 3,
+      keywords: [
+        "prioritet", "viktigast", "högsta", "kritisk", "akut", "bråttom",
+        "jämfört med", "istället för", "före", "efter", "rankning", "ordning",
+        "andra projekt", "konkurrerar", "resurser", "budget", "tid",
+        "nummer ett", "första", "högre", "lägre", "relativt"
+      ],
+      patterns: [
+        /högsta.*prioritet|viktigast/i,
+        /kritisk.*för.*företaget/i,
+        /jämfört med.*andra.*projekt/i,
+        /nummer.*ett|första.*prioritet/i,
+        /konkurrerar.*med.*andra/i,
+        /resurser.*istället för/i,
+        /budget.*prioriteras/i,
+        /högre.*än.*andra/i,
+        /relativt.*viktigt/i,
+        /akuter.*än/i
+      ]
+    }
+  ]
+};
+
 // Analysis Result Type
 export type InformationAnalysis = {
   clusterId: string;
@@ -150,7 +250,37 @@ export class InformationAnalyzer {
       totalScore,
       missingPoints,
       canProgress,
-      nextQuestion: canProgress ? undefined : this.generateFollowUpQuestion(missingPoints[0])
+      nextQuestion: canProgress ? undefined : this.generateFollowUpQuestion(missingPoints[0], 'pain-point')
+    };
+  }
+
+  static analyzeImpactUrgency(userMessage: string): InformationAnalysis {
+    const requirements = IMPACT_URGENCY_REQUIREMENTS;
+    const foundPoints = requirements.requiredPoints.map(point => {
+      const found = this.checkForInformationPoint(userMessage, point);
+      return {
+        key: point.key,
+        found: found.found,
+        confidence: found.confidence,
+        extractedText: found.extractedText
+      };
+    });
+
+    const foundCount = foundPoints.filter(p => p.found).length;
+    const totalScore = Math.round((foundCount / requirements.requiredPoints.length) * 100);
+    const canProgress = foundCount >= requirements.minimumPoints && totalScore >= requirements.progressThreshold;
+    
+    const missingPoints = foundPoints
+      .filter(p => !p.found)
+      .map(p => requirements.requiredPoints.find(rp => rp.key === p.key)?.description || p.key);
+
+    return {
+      clusterId: 'impact-urgency',
+      foundPoints,
+      totalScore,
+      missingPoints,
+      canProgress,
+      nextQuestion: canProgress ? undefined : this.generateFollowUpQuestion(missingPoints[0], 'impact-urgency')
     };
   }
 
@@ -192,31 +322,56 @@ export class InformationAnalyzer {
     };
   }
 
-  private static generateFollowUpQuestion(missingPoint: string): string {
-    const questions: Record<string, string[]> = {
-      "Nuvarande situation vs önskad situation - vad är problemet konkret?": [
-        "Kan du beskriva mer konkret vad som inte fungerar idag?",
-        "Vad skulle du vilja att situationen såg ut istället?",
-        "Vad är skillnaden mellan hur det är nu och hur du vill att det ska vara?"
-      ],
-      "Konkreta konsekvenser - vad händer när problemet uppstår?": [
-        "Vad händer konkret när detta problem uppstår?",
-        "Vilka konsekvenser får ni när detta inte fungerar?",
-        "Kostar detta er något - tid, pengar, kunder?"
-      ],
-      "Omfattning - hur ofta/stort är problemet?": [
-        "Hur ofta händer detta?",
-        "Är det här något som påverkar er dagligen, veckovis eller mer sällan?",
-        "Hur stor del av er tid/verksamhet påverkas av detta?"
-      ],
-      "Vem påverkas - vilka märker av problemet?": [
-        "Vem märker av detta problem?",
-        "Påverkar det bara dig eller även andra i teamet/företaget?",
-        "Vilka andra personer eller grupper drabbas av detta?"
-      ]
+  private static generateFollowUpQuestion(missingPoint: string, clusterId: string): string {
+    const questions: Record<string, Record<string, string[]>> = {
+      'pain-point': {
+        "Nuvarande situation vs önskad situation - vad är problemet konkret?": [
+          "Kan du beskriva mer konkret vad som inte fungerar idag?",
+          "Vad skulle du vilja att situationen såg ut istället?",
+          "Vad är skillnaden mellan hur det är nu och hur du vill att det ska vara?"
+        ],
+        "Konkreta konsekvenser - vad händer när problemet uppstår?": [
+          "Vad händer konkret när detta problem uppstår?",
+          "Vilka konsekvenser får ni när detta inte fungerar?",
+          "Kostar detta er något - tid, pengar, kunder?"
+        ],
+        "Omfattning - hur ofta/stort är problemet?": [
+          "Hur ofta händer detta?",
+          "Är det här något som påverkar er dagligen, veckovis eller mer sällan?",
+          "Hur stor del av er tid/verksamhet påverkas av detta?"
+        ],
+        "Vem påverkas - vilka märker av problemet?": [
+          "Vem märker av detta problem?",
+          "Påverkar det bara dig eller även andra i teamet/företaget?",
+          "Vilka andra personer eller grupper drabbas av detta?"
+        ]
+      },
+      'impact-urgency': {
+        "Tidsaspekt - vad händer om vi väntar 3/6/12 månader?": [
+          "Vad händer om ni väntar 3-6 månader med att lösa detta?",
+          "Finns det någon deadline eller frist ni måste hålla?",
+          "Hur akut är detta problem - kan ni vänta eller måste det lösas snart?"
+        ],
+        "Affärskonsekvenser - vilken påverkan får det på verksamheten/resultatet?": [
+          "Vilken påverkan får detta på er verksamhet eller resultat?",
+          "Kostar detta er pengar, kunder eller andra affärskonsekvenser?",
+          "Vad händer med er konkurrensposition om detta inte löses?"
+        ],
+        "Pressgrupper - vem bryr sig om att detta löses? (chef, kunder, styrelse, team)": [
+          "Vem i organisationen bryr sig mest om att detta löses?",
+          "Frågar er chef, kunder eller andra regelbundet om detta?",
+          "Vilka grupper eller personer pressar på för att få detta löst?"
+        ],
+        "Prioritering - hur viktigt är detta jämfört med andra saker företaget gör?": [
+          "Hur viktigt är detta jämfört med andra projekt eller initiativ?",
+          "Är detta en av era högsta prioriteringar just nu?",
+          "Konkurrerar detta med andra saker ni arbetar med?"
+        ]
+      }
     };
 
-    const questionOptions = questions[missingPoint] || [
+    const clusterQuestions = questions[clusterId] || {};
+    const questionOptions = clusterQuestions[missingPoint] || [
       "Kan du berätta mer om det?",
       "Vad menar du mer konkret?",
       "Kan du ge ett exempel?"
