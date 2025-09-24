@@ -62,23 +62,27 @@ export async function POST(request: NextRequest) {
       content: m.content
     }));
 
-    const claude = getClaudeClient();
-    if (!claude.isConfigured()) {
-      console.error('Claude not configured');
-      return NextResponse.json({ error: 'AI service not configured' }, { status: 500 });
+    // Claude MUST be configured – no fallback
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error('ANTHROPIC_API_KEY is not configured (env missing at runtime)');
+      return NextResponse.json({ error: 'AI service not configured: missing ANTHROPIC_API_KEY' }, { status: 500 });
     }
+    const claude = getClaudeClient();
 
-    // Get AI response
-    let ai;
+    let baseMessage = '';
+    let nextQuestion = analysisResult?.nextQuestion;
+
+    // Get AI response – hard fail if it errors
     try {
-      ai = await claude.chat(claudeMessages, systemPrompt);
+      const ai = await claude.chat(claudeMessages, systemPrompt);
+      baseMessage = ai.content || '';
     } catch (e) {
       console.error('Claude API error:', e);
       return NextResponse.json({ error: 'AI service temporarily unavailable' }, { status: 500 });
     }
 
-    const baseMessage = ai.content || 'Jag kunde inte generera ett svar just nu.';
-    const nextQuestion = analysisResult?.nextQuestion;
+    // Ensure we always include a targeted follow-up
+    nextQuestion = nextQuestion || 'Kan du utveckla lite mer?';
     const finalMessage = nextQuestion ? `${baseMessage}\n\n${nextQuestion}` : baseMessage;
 
     // Determine completion
