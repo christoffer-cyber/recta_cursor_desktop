@@ -59,15 +59,24 @@ jobs:
       
       - name: Comment deployment URL
         if: steps.deploy.outputs.deployment-url != ''
-        uses: actions/github-script@v7
+        run: |
+          echo "🚀 DEPLOYMENT SUCCESSFUL!"
+          echo "Preview URL: ${{ steps.deploy.outputs.deployment-url }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          
+          # Create a simple comment file for manual posting if needed
+          echo "## 🚀 Arena Deployment Complete" > deployment-info.md
+          echo "" >> deployment-info.md
+          echo "**Preview URL:** ${{ steps.deploy.outputs.deployment-url }}" >> deployment-info.md
+          echo "**Commit:** \`${{ github.sha }}\`" >> deployment-info.md
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> deployment-info.md
+          echo "**Deployed at:** $(date -u)" >> deployment-info.md
+      
+      - name: Upload deployment info
+        if: steps.deploy.outputs.deployment-url != ''
+        uses: actions/upload-artifact@v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const url = `${{ steps.deploy.outputs.deployment-url }}`;
-            const sha = process.env.GITHUB_SHA;
-            await github.repos.createCommitComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              commit_sha: sha,
-              body: `🚀 Deployed to Vercel: ${url}`
-            });
+          name: deployment-info
+          path: deployment-info.md
+          retention-days: 30
