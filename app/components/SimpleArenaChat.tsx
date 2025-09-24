@@ -149,8 +149,8 @@ export default function SimpleArenaChat({ sessionId, onComplete }: SimpleArenaCh
   };
 
   return (
-    <div style={ComponentTokens.chatContainer}>
-      <div className="messages-area">
+    <div style={{ ...ComponentTokens.chatContainer, height: '100%', minHeight: 0 }}>
+      <div className="messages-area" style={{ overflowY: 'auto' }}>
         {messages.map((message, index) => (
           <div key={index} className={`message ${message.role}`}>
             <div className="message-avatar">
@@ -194,7 +194,7 @@ export default function SimpleArenaChat({ sessionId, onComplete }: SimpleArenaCh
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="input-area">
+      <div className="input-area" style={{ flexShrink: 0 }}>
         <div className="input-container">
           <textarea
             value={input}

@@ -124,14 +124,22 @@ export default function SimpleClusterTopbar({
                 {name}
               </span>
               
-              {cluster && cluster.confidence > 0 && (
-                <span style={{
-                  fontSize: DesignSystem.typography.fontSize.xs,
-                  opacity: 0.8,
-                  marginLeft: DesignSystem.spacing[1],
+              {/* mini progress bar per step */}
+              {cluster && (
+                <div style={{
+                  width: 48,
+                  height: 4,
+                  background: DesignSystem.colors.neutral[200],
+                  borderRadius: 4,
+                  overflow: 'hidden',
+                  marginLeft: DesignSystem.spacing[2]
                 }}>
-                  {Math.round(cluster.confidence)}%
-                </span>
+                  <div style={{
+                    width: `${Math.max(0, Math.min(100, cluster.confidence))}%`,
+                    height: '100%',
+                    background: DesignSystem.colors.accent[500]
+                  }} />
+                </div>
               )}
             </div>
           );

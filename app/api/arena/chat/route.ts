@@ -1,97 +1,118 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getClaudeClient } from '../../../../lib/claude-client';
+import { ArenaEngine } from '../../../../lib/arena-engine';
+import { ArenaPrompts } from '../../../../lib/arena-prompts';
 
-// Simple, robust Arena chat API
+// Arena chat API using intelligent analysis
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== SIMPLE ARENA CHAT START ===');
-    
+    console.log('=== ARENA CHAT (INTELLIGENT) START ===');
+
     const body = await request.json();
-    console.log('Request body:', { 
-      hasMessages: !!body.messages, 
+    console.log('Request body:', {
+      hasMessages: !!body.messages,
       messagesCount: body.messages?.length || 0,
-      currentCluster: body.currentCluster 
+      currentCluster: body.currentCluster
     });
-    
+
     // Basic validation
     if (!body.messages || !Array.isArray(body.messages) || body.messages.length === 0) {
       return NextResponse.json({ error: 'No messages provided' }, { status: 400 });
     }
 
-    const { messages, currentCluster = 'pain-point', sessionId = 'default' } = body;
+    const { messages, currentCluster = 'pain-point', sessionId = 'default', clusters = {} } = body;
     const latestMessage = messages[messages.length - 1];
-    
-    console.log('Latest message:', { 
-      role: latestMessage?.role, 
-      contentLength: latestMessage?.content?.length 
-    });
 
-    // Simple confidence calculation
-    const messageLength = latestMessage?.content?.length || 0;
-    const confidenceIncrease = messageLength > 100 ? 25 : 15;
-    const currentConfidence = Math.min(100, confidenceIncrease);
-
-    // Simple cluster update
-    const clusterUpdate = {
-      clusterId: currentCluster,
-      updates: {
-        confidence: currentConfidence,
-        status: currentConfidence >= 75 ? 'complete' : 'in-progress'
-      }
-    };
-
-    // Simple AI response based on cluster
-    let aiResponse = "Jag förstår att du vill förbereda en rekrytering. ";
-    
-    switch (currentCluster) {
-      case 'pain-point':
-        aiResponse += "Låt oss börja med att förstå det verkliga problemet. Kan du beskriva vilken situation ni befinner er i just nu och vad som saknas?";
-        break;
-      case 'impact-urgency':
-        aiResponse += "Nu när vi förstår problemet, låt oss titta på påverkan. Vad händer om ni inte löser detta? Hur viktigt är det?";
-        break;
-      case 'success-check':
-        aiResponse += "Bra! Nu behöver vi definiera vad framgång betyder. Vilka konkreta mål ska den nya personen uppnå?";
-        break;
-      case 'resources':
-        aiResponse += "Utmärkt! Nu ska vi titta på resurser. Vad har ni för budget och kapacitet för denna rekrytering?";
-        break;
-      case 'org-reality':
-        aiResponse += "Perfekt! Nu behöver vi förstå er organisation. Vilken typ av person skulle passa bäst i er kultur?";
-        break;
-      case 'alternatives':
-        aiResponse += "Sista steget! Har ni övervägt andra lösningar än rekrytering? Varför är anställning rätt väg?";
-        break;
-      default:
-        aiResponse += "Låt oss fortsätta analysera er rekryteringsbehov. Berätta mer om situationen.";
+    if (!latestMessage || latestMessage.role !== 'user') {
+      return NextResponse.json({ error: 'Last message must be a user message' }, { status: 400 });
     }
 
+    console.log('Latest message:', {
+      role: latestMessage.role,
+      contentLength: latestMessage.content?.length,
+      preview: (latestMessage.content || '').slice(0, 120)
+    });
+
+    // Analyze cluster progress based on information quality
+    const analysisResult = ArenaEngine.analyzeClusterProgress({
+      currentCluster,
+      clusters,
+      latestUserMessage: latestMessage,
+      sessionId,
+      messagesCount: messages.length
+    });
+
+    // Derive cluster update
+    const newConfidence = analysisResult?.newConfidence ?? (clusters[currentCluster]?.confidence ?? 0);
+    const clusterUpdate = analysisResult
+      ? ArenaEngine.createClusterUpdate(currentCluster, newConfidence)
+      : null;
+
+    // Build system prompt with context
+    const systemPrompt = ArenaPrompts.buildSystemPrompt({
+      currentCluster,
+      sessionId,
+      messagesCount: messages.length,
+      clusterUpdate
+    });
+
+    // Prepare Claude messages
+    const claudeMessages = messages.map((m: { role: string; content: string }) => ({
+      role: m.role === 'system' ? 'assistant' : (m.role as 'user' | 'assistant'),
+      content: m.content
+    }));
+
+    const claude = getClaudeClient();
+    if (!claude.isConfigured()) {
+      console.error('Claude not configured');
+      return NextResponse.json({ error: 'AI service not configured' }, { status: 500 });
+    }
+
+    // Get AI response
+    let ai;
+    try {
+      ai = await claude.chat(claudeMessages, systemPrompt);
+    } catch (e) {
+      console.error('Claude API error:', e);
+      return NextResponse.json({ error: 'AI service temporarily unavailable' }, { status: 500 });
+    }
+
+    const baseMessage = ai.content || 'Jag kunde inte generera ett svar just nu.';
+    const nextQuestion = analysisResult?.nextQuestion;
+    const finalMessage = nextQuestion ? `${baseMessage}\n\n${nextQuestion}` : baseMessage;
+
+    // Determine completion
+    const isComplete = !!(analysisResult?.canProgress && currentCluster === 'alternatives');
+
     const response = {
-      message: aiResponse,
+      message: finalMessage,
       sessionId,
       clusterUpdate,
-      isComplete: false
+      isComplete,
+      analysis: analysisResult
+        ? {
+            foundPoints: analysisResult.analysis?.foundPoints?.filter(p => p.found).map(p => p.key) || [],
+            missingPoints: analysisResult.missingPoints || [],
+            totalScore: analysisResult.newConfidence,
+            canProgress: analysisResult.canProgress,
+            nextQuestion: analysisResult.nextQuestion || null
+          }
+        : null
     };
 
-    console.log('Simple response created:', { 
-      messageLength: aiResponse.length,
-      hasClusterUpdate: !!clusterUpdate,
-      currentCluster 
+    console.log('Response summary:', {
+      currentCluster,
+      newConfidence,
+      foundPoints: response.analysis?.foundPoints?.length || 0,
+      missingPoints: response.analysis?.missingPoints?.length || 0
     });
-    console.log('=== SIMPLE ARENA CHAT END ===');
-    
+    console.log('=== ARENA CHAT (INTELLIGENT) END ===');
+
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error('=== SIMPLE ARENA CHAT ERROR ===');
+    console.error('=== ARENA CHAT ERROR ===');
     console.error('Error:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
-    
-    return NextResponse.json(
-      { 
-        error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
